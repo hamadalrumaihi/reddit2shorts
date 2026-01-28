@@ -20,7 +20,7 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   cd reddit2shorts
   mv .env.example .env # populate it
   npm install
-  ts-node src/cli.ts --random --upload youtube
+  ts-node --logError src/cli.ts --random --upload youtube
 ```
 ## Environment Variables
 
