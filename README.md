@@ -110,6 +110,21 @@ Each successfully-rendered Reddit post is recorded in `.seen-posts.json`
 (gitignored) and skipped on later `--random` runs, so an automated/scheduled
 loop never re-posts the same content. Delete that file to reset.
 
+### Config file & presets
+
+Instead of long flag lists you can use a JSON config file (default
+`reddit2shorts.config.json`, or `--config <path>`) and/or a built-in preset.
+
+```bash
+cp reddit2shorts.config.example.json reddit2shorts.config.json   # then edit
+bun src/cli.ts --random                                          # uses the config
+bun src/cli.ts --random --preset aita-judgment                   # built-in preset
+```
+
+Presets: `askreddit-story`, `tifu-narrative`, `aita-judgment`, `shower-thought`.
+
+Precedence (highest first): **explicit CLI flag → `--preset` → config file → built-in default**. Config/preset keys are the camelCase option names (`minScore`, `maxDuration`, `subreddits`, …).
+
 ## Troubleshooting
 
 **yt-dlp fails / "Sign in to confirm you're not a bot" / n-signature errors**
