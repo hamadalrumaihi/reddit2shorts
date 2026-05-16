@@ -12,6 +12,7 @@ import env from "./config/env";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
 import { RedditPost } from "./reddit/types";
+import { JsonReddit } from "./reddit/impl/jsonReddit";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
 import { GeminiStory } from "./storySource/geminiStory";
@@ -35,8 +36,8 @@ program
   )
   .option(
     "--source <source>",
-    "Where stories come from: 'gemini' (AI-generated) or 'reddit'",
-    "gemini"
+    "Story source: 'snoowrap' (Reddit API, needs creds), 'json' (Reddit public JSON, no creds), or 'gemini' (AI-generated)",
+    "snoowrap"
   )
   .option("-r, --random", "Make short from a random post")
   .option("-p, --postId <postId>", "Make short from the post with id")
@@ -74,8 +75,10 @@ const options = program.opts() as Record<string, any>;
 
 async function main() {
   try {
-    if (options.source !== "gemini" && options.source !== "reddit") {
-      console.error("Error: --source must be either 'gemini' or 'reddit'");
+    if (!["snoowrap", "json", "gemini"].includes(options.source)) {
+      console.error(
+        "Error: --source must be one of 'snoowrap', 'json' or 'gemini'"
+      );
       process.exit(1);
     }
 
@@ -83,32 +86,39 @@ async function main() {
     let post: RedditPost | null | undefined;
     let tts: TtsInterface | undefined;
 
-    if (options.source === "reddit") {
+    if (options.source === "gemini") {
+      reddit = new GeminiStory(env.GEMINI_API_KEY, options.subreddits);
+      post = await reddit.getPost(options.postId ?? "");
+    } else {
       if (!options.postId && !options.random) {
         console.error(
-          "Error: with --source reddit you must provide either --postId <postId> or --random"
+          `Error: with --source ${options.source} you must provide either --postId <postId> or --random`
         );
         process.exit(1);
       }
 
-      if (
-        !env.REDDIT_CLIENT_ID ||
-        !env.REDDIT_CLIENT_SECRET ||
-        !env.REDDIT_USERNAME ||
-        !env.REDDIT_PASSWORD
-      ) {
-        console.error(
-          "Error: --source reddit requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME and REDDIT_PASSWORD in .env"
-        );
-        process.exit(1);
-      }
+      if (options.source === "snoowrap") {
+        if (
+          !env.REDDIT_CLIENT_ID ||
+          !env.REDDIT_CLIENT_SECRET ||
+          !env.REDDIT_USERNAME ||
+          !env.REDDIT_PASSWORD
+        ) {
+          console.error(
+            "Error: --source snoowrap requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME and REDDIT_PASSWORD in .env"
+          );
+          process.exit(1);
+        }
 
-      reddit = new SnoowrapReddit(
-        env.REDDIT_CLIENT_ID,
-        env.REDDIT_CLIENT_SECRET,
-        env.REDDIT_USERNAME,
-        env.REDDIT_PASSWORD
-      );
+        reddit = new SnoowrapReddit(
+          env.REDDIT_CLIENT_ID,
+          env.REDDIT_CLIENT_SECRET,
+          env.REDDIT_USERNAME,
+          env.REDDIT_PASSWORD
+        );
+      } else {
+        reddit = new JsonReddit();
+      }
 
       if (options.random) {
         post = await reddit.getTextOnlyPostFromList(
@@ -119,9 +129,6 @@ async function main() {
       } else if (options.postId) {
         post = await reddit.getPost(options.postId);
       }
-    } else {
-      reddit = new GeminiStory(env.GEMINI_API_KEY, options.subreddits);
-      post = await reddit.getPost(options.postId ?? "");
     }
 
     if (!post) {
