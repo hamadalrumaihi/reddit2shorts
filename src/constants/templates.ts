@@ -28,7 +28,7 @@ export const commentTemplate = `
               line-height: 16px;
             "
           >
-            %username%
+            %username%%anonymizedUsername%
           </div>
           <div
             style="

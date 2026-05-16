@@ -205,10 +205,13 @@ async function createCommentsScreenshots({
   reddit: RedditInterface;
 }) {
   for (const [index, comment] of comments.entries()) {
-    // console.log(comment.body_html);
+    // Decode HTML entities and extract the inner content so the
+    // template renders formatted text instead of raw tags.
+    const $c = cheerio.load(comment.body_html);
+    const bodyHtml = $c(".md").html() ?? $c("body").html() ?? comment.body_html;
 
     await screenshotComment(
-      comment.body_html.trim(),
+      bodyHtml.trim(),
       comment.author.name,
       formatDistanceToNow(fromUnixTime(comment.created_utc), {
         addSuffix: true,

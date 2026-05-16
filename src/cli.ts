@@ -112,6 +112,14 @@ program
     "reddit",
     "redditstories",
   ])
+  .option(
+    "--cookies-from-browser <browser>",
+    "Pass cookies to yt-dlp from a browser (e.g. chrome, firefox, edge)"
+  )
+  .option(
+    "--cookies <file>",
+    "Path to a Netscape-format cookies.txt file for yt-dlp"
+  )
   .option("-a, --bgAudio <bgAudio...>", "Background audio", [
     "https://www.youtube.com/watch?v=xy_NKN75Jhw",
   ])
@@ -147,6 +155,8 @@ interface CliOptions {
   tags: string[];
   bgAudio: string[] | string;
   bgVideo: string[] | string;
+  cookiesFromBrowser?: string;
+  cookies?: string;
   doctor?: boolean;
   dryRun?: boolean;
 }
@@ -301,7 +311,10 @@ async function main() {
 
     const spinnerBg = ora("Getting background assets ready").start();
     // Pass the full pools so a failed source falls back to the next.
-    await downloadBackgroundAssets(bgVideo, bgAudio);
+    await downloadBackgroundAssets(bgVideo, bgAudio, {
+      cookiesFromBrowser: options.cookiesFromBrowser,
+      cookiesFile: options.cookies,
+    });
     spinnerBg.succeed("Background assets ready");
 
     const output = await createShortFromPost({

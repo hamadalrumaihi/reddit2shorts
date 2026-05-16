@@ -32,8 +32,20 @@ function shuffled<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
-const YTDLP_COMMON =
-  'yt-dlp --remote-components ejs:github --extractor-args "youtube:player_client=ios,web"';
+export interface YtdlpCookieOptions {
+  cookiesFromBrowser?: string;
+  cookiesFile?: string;
+}
+
+function ytdlpBase(opts?: YtdlpCookieOptions): string {
+  let cmd = 'yt-dlp --remote-components ejs:github --extractor-args "youtube:player_client=ios,web"';
+  if (opts?.cookiesFile) {
+    cmd += ` --cookies "${opts.cookiesFile}"`;
+  } else if (opts?.cookiesFromBrowser) {
+    cmd += ` --cookies-from-browser ${opts.cookiesFromBrowser}`;
+  }
+  return cmd;
+}
 
 /**
  * Download background audio + video, with:
@@ -44,7 +56,8 @@ const YTDLP_COMMON =
  */
 export async function downloadBackgroundAssets(
   videoUrls: string | string[],
-  audioUrls: string | string[]
+  audioUrls: string | string[],
+  cookieOpts?: YtdlpCookieOptions
 ) {
   const videos = shuffled(
     Array.isArray(videoUrls) ? videoUrls : [videoUrls]
@@ -56,6 +69,8 @@ export async function downloadBackgroundAssets(
   const mp3Path = path.join(shortsDir, "bgAudio.mp3");
   const mp4Path = path.join(shortsDir, "bgVideo.mp4");
 
+  const YTDLP = ytdlpBase(cookieOpts);
+
   await mkdir(shortsDir, { recursive: true });
   const cache = await readCache();
 
@@ -65,7 +80,7 @@ export async function downloadBackgroundAssets(
     urls: audios,
     cache,
     command: (url) =>
-      `${YTDLP_COMMON} -x --audio-format mp3 -o "${shortsDir}/bgAudio.%(ext)s" "${url}"`,
+      `${YTDLP} -x --audio-format mp3 -o "${shortsDir}/bgAudio.%(ext)s" "${url}"`,
   });
 
   await ensureAsset({
@@ -74,7 +89,7 @@ export async function downloadBackgroundAssets(
     urls: videos,
     cache,
     command: (url) =>
-      `${YTDLP_COMMON} -f "bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${shortsDir}/bgVideo.%(ext)s" "${url}"`,
+      `${YTDLP} -f "bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${shortsDir}/bgVideo.%(ext)s" "${url}"`,
   });
 
   await writeCache(cache);
