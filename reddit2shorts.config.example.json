@@ -1,0 +1,14 @@
+{
+  "source": "json",
+  "tts": "edge",
+  "subreddits": ["AskReddit", "tifu", "AmItheAsshole"],
+  "category": "top",
+  "timeSpan": "week",
+  "commentsCount": "10",
+  "maxDuration": "59",
+  "minScore": "1000",
+  "minComments": "50",
+  "maxAgeDays": "7",
+  "minBodyChars": "0",
+  "maxBodyChars": "0"
+}

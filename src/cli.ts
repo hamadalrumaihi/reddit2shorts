@@ -9,6 +9,7 @@ import { Command } from "commander";
 import "dotenv/config";
 import ora from "ora";
 import env, { requireEnv } from "./config/env";
+import { resolveOptions } from "./config/loadOptions";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
 import {
@@ -39,6 +40,14 @@ program
   .name("reddit2shorts")
   .description("Make youtube shorts from reddit posts")
   .version("1.0.0")
+  .option(
+    "--preset <name>",
+    "Apply a built-in preset: askreddit-story | tifu-narrative | aita-judgment | shower-thought"
+  )
+  .option(
+    "--config <path>",
+    "Path to a JSON config file (default: reddit2shorts.config.json)"
+  )
   .option(
     "-s, --subreddits <subreddit...>",
     "List of subreddits to choose text post from",
@@ -103,6 +112,8 @@ program
   ]);
 
 interface CliOptions {
+  preset?: string;
+  config?: string;
   source: string;
   subreddits: string[];
   random?: boolean;
@@ -131,7 +142,7 @@ interface CliOptions {
 
 program.parse(process.argv);
 
-const options = program.opts<CliOptions>();
+const options = resolveOptions<CliOptions>(program);
 
 async function main() {
   try {
