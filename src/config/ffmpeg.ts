@@ -1,16 +1,16 @@
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegStaticPath from "ffmpeg-static";
 
-// Prefer an explicit system ffmpeg (FFMPEG_PATH) when set — useful when the
-// ffmpeg-static binary is incompatible with the OS (e.g. install ffmpeg via
-// winget/brew/apt and point FFMPEG_PATH at it). Falls back to ffmpeg-static.
-const ffmpegPath = process.env.FFMPEG_PATH || ffmpegStaticPath;
-
-if (!ffmpegPath) {
-  throw new Error(
-    "No ffmpeg binary found. Set FFMPEG_PATH to a system ffmpeg, or ensure the ffmpeg-static package is installed."
-  );
+/**
+ * Resolve ffmpeg without throwing at import time (so `--doctor` can still run
+ * to diagnose a missing binary). Priority:
+ *   1. FFMPEG_PATH env var (system/winget/brew ffmpeg)
+ *   2. ffmpeg-static bundled binary
+ *   3. fall back to whatever `ffmpeg` is on PATH (don't pin a path)
+ */
+const resolved = process.env.FFMPEG_PATH || ffmpegStaticPath || null;
+if (resolved) {
+  ffmpeg.setFfmpegPath(resolved);
 }
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 export default ffmpeg;
