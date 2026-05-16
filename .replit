@@ -1,6 +1,6 @@
 run = "bun install && bun src/cli.ts --random"
 entrypoint = "src/cli.ts"
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
