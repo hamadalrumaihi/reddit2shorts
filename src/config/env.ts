@@ -21,6 +21,10 @@ const envSchema = z.object({
   GOOGLE_REFRESH_TOKEN: z.string().min(1).optional(),
   // Google Cloud TTS credentials JSON — only `--tts google`.
   GOOGLE_CREDENTIALS: z.string().min(1).optional(),
+  // TikTok Content Posting API — only `--upload tiktok`.
+  TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
+  TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
+  TIKTOK_REFRESH_TOKEN: z.string().min(1).optional(),
 });
 
 const env = envSchema.parse(process.env);

@@ -21,6 +21,7 @@ import { GoogleCloudTts } from "./tts/impl/googleCloudTts";
 import { TiktokTts } from "./tts/impl/tiktokTts";
 import { TtsInterface } from "./tts/tts";
 import { uploadToYoutube } from "./upload";
+import { uploadToTiktok } from "./upload/tiktok";
 import { downloadBackgroundAssets } from "./utils/getBackgroundAudioVideo";
 import { getShortTitle } from "./utils/getShortTitle";
 import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
@@ -58,7 +59,7 @@ program
     "Which tts to use: 'edge' (no creds — default), 'google' or 'tiktok'",
     "edge"
   )
-  .option("-u, --upload <platform>", "Upload to platform")
+  .option("-u, --upload <platform>", "Upload after render: 'youtube' or 'tiktok'")
   .option("--gTtsVoice <gTtsVoice>", "Voice of google tts", "en-US-Wavenet-F")
   .option("--gTtsLang <gTtsLang>", "Language of google tts", "en-US")
   .option("--gTtsGender <gTtsGender>", "Gender of google tts", "FEMALE")
@@ -243,6 +244,18 @@ async function main() {
         uploadSpinner.succeed(`Uploaded to youtube: ${url}`);
       } catch (err) {
         uploadSpinner.fail("Error uploading to youtube");
+        console.error(err);
+      }
+    }
+    if (options.upload === "tiktok") {
+      const uploadSpinner = ora("Uploading to TikTok (draft)").start();
+      try {
+        const publishId = await uploadToTiktok(output);
+        uploadSpinner.succeed(
+          `Sent to TikTok inbox as a draft (publish_id: ${publishId}). Open the TikTok app to finish posting.`
+        );
+      } catch (err) {
+        uploadSpinner.fail("Error uploading to TikTok");
         console.error(err);
       }
     }
