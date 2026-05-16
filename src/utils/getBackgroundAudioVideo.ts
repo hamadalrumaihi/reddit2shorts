@@ -24,14 +24,14 @@ export async function downloadBackgroundAssets(videoUrl: string, audioUrl: strin
 
         // Download MP3 if it doesn't exist
         if (!(await fileExists(mp3Path))) {
-            await execAsync(`yt-dlp -x --audio-format mp3 -o "${shortsDir}/bgAudio.%(ext)s" "${audioUrl}"`);
+            await execAsync(`yt-dlp --remote-components ejs:github --extractor-args "youtube:player_client=ios,web" -x --audio-format mp3 -o "${shortsDir}/bgAudio.%(ext)s" "${audioUrl}"`);
         } else {
             // console.log('MP3 already exists.');
         }
 
         // Download MP4 if it doesn't exist
         if (!(await fileExists(mp4Path))) {
-            await execAsync(`yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "${shortsDir}/bgVideo.%(ext)s" "${videoUrl}"`);
+            await execAsync(`yt-dlp --remote-components ejs:github --extractor-args "youtube:player_client=ios,web" -f "bestvideo[height<=720]+bestaudio/best" --merge-output-format mp4 -o "${shortsDir}/bgVideo.%(ext)s" "${videoUrl}"`);
         } else {
             // console.log('MP4 already exists.');
         }
