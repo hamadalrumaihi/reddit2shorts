@@ -25,6 +25,17 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   bun src/cli.ts --source snoowrap --random                        # Reddit API (needs creds)
   bun src/cli.ts --source gemini                                   # AI-generated story (needs GEMINI_API_KEY)
 ```
+
+### Run on Replit (works from a phone)
+
+This repo ships `.replit` and `replit.nix`, so you can run it without a local machine:
+
+1. Import the repo into Replit (Create → Import from GitHub).
+2. Press **Run**. Replit installs bun, yt-dlp and Chromium automatically, then runs the zero-credential default (`--source json --tts edge`).
+3. The finished video appears at `shorts/<id>/output.mp4` in the file tree.
+
+No credentials needed. If Reddit blocks Replit's datacenter IP (you'll see repeated `403` warnings), edit the `run` line in `.replit` to `bun install && bun src/cli.ts --source gemini` and add a free `GEMINI_API_KEY` in Replit's **Secrets** tab.
+
 ## Environment Variables
 
 To run this project, you will need to rename .env.example to .env add the following

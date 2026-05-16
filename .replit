@@ -1,0 +1,12 @@
+run = "bun install && bun src/cli.ts --random"
+entrypoint = "src/cli.ts"
+
+[nix]
+channel = "stable-24_05"
+
+# Zero-credential defaults: --source json (no Reddit auth) + --tts edge
+# (no TTS auth). The finished video is written to shorts/<id>/output.mp4.
+#
+# If Reddit blocks Replit's IP (datacenter 403s), switch the run command to:
+#   bun install && bun src/cli.ts --source gemini
+# and add a free GEMINI_API_KEY in the Secrets tab.
