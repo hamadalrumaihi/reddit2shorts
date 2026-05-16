@@ -85,6 +85,24 @@ Options:
   -h, --help                          display help for command
 ```
 
+## Troubleshooting
+
+**yt-dlp fails / "Sign in to confirm you're not a bot" / n-signature errors**
+YouTube rotates anti-bot challenges often. The background-download commands
+already pass `--extractor-args "youtube:player_client=ios,web"` and
+`--remote-components ejs:github`, but this only works with a **recent yt-dlp**.
+Keep it current: `pip install -U yt-dlp` (or `yt-dlp -U`). On Replit the
+Nix-provided yt-dlp can be outdated — if downloads fail there, upgrade it with
+pip in the shell before running.
+
+**ffmpeg errors / `ffmpeg-static` binary incompatible with your system**
+Install a real ffmpeg (winget/brew/apt) and point the app at it via the
+`FFMPEG_PATH` env var, e.g. on Windows:
+```
+set FFMPEG_PATH=C:\path\to\ffmpeg\bin\ffmpeg.exe
+```
+When `FFMPEG_PATH` is set it overrides the bundled `ffmpeg-static` binary.
+
 ## Authors
 
 - [@yogeshdofficial](https://www.github.com/yogeshdofficial)
