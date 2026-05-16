@@ -3,3 +3,4 @@ dist
 .env
 shorts
 bun.lock
+.seen-posts.json

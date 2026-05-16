@@ -16,7 +16,8 @@ const getVideoMetadata = (file: string): Promise<ffmpeg.FfprobeData> =>
 export async function addBackgroundVideo(
   background: string,
   overlay: string,
-  output: string
+  output: string,
+  maxDurationSec = 59
 ) {
   try {
     // Get durations
@@ -28,13 +29,18 @@ export async function addBackgroundVideo(
     const bgDuration = bgMeta.format.duration || 0;
     const ovDuration = ovMeta.format.duration || 0;
 
+    // Cap the final length so the result is a valid YouTube Short.
+    const targetDuration = Math.min(ovDuration, maxDurationSec);
+
     // Ensure there's enough space to seek
-    if (bgDuration <= ovDuration) {
-      throw new Error("Background video must be longer than overlay video.");
+    if (bgDuration <= targetDuration) {
+      throw new Error(
+        "Background video must be longer than the (capped) overlay duration."
+      );
     }
 
     // Pick random start time (with a buffer)
-    const maxStart = bgDuration - ovDuration;
+    const maxStart = bgDuration - targetDuration;
     const randomStart = parseFloat((Math.random() * maxStart).toFixed(2));
 
     return new Promise((resolve, reject) => {
@@ -86,14 +92,16 @@ export async function addBackgroundVideo(
         .outputOptions([
           "-map [outv]",
           "-map 1:a",
+          `-t ${targetDuration}`, // hard cap -> valid Short, far smaller file
           "-c:v libx264",
           "-threads 0",
+          "-r 30",
+          "-pix_fmt yuv420p",
           "-c:a aac",
-          "-b:a 128k",
+          "-b:a 96k",
           "-movflags +faststart",
-          "-shortest",
-          "-crf", "21",
-          "-preset", "medium",
+          "-crf", "28",
+          "-preset", "veryfast",
         ])
 
         .on("error", (err) => {

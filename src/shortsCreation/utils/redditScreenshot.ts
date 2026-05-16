@@ -1,6 +1,16 @@
 import puppeteer from "puppeteer";
 import { commentTemplate, postTemplate } from "../../constants/templates";
 
+// On Replit / containers, use the system Chromium (PUPPETEER_EXECUTABLE_PATH)
+// and disable the sandbox (no user namespaces available there).
+const launchOptions = {
+  headless: true,
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  ...(process.env.PUPPETEER_EXECUTABLE_PATH
+    ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH }
+    : {}),
+};
+
 export async function screenshotComment(
   body: string,
   username: string,
@@ -9,9 +19,7 @@ export async function screenshotComment(
   avatar: string,
   outputPath: string
 ) {
-  const browser = await puppeteer.launch({
-    headless: true
-  });
+  const browser = await puppeteer.launch(launchOptions);
   const page = await browser.newPage();
   await page.setContent(
     commentTemplate
@@ -54,7 +62,7 @@ export async function screenshotPost(
   avatar: string,
   outputPath: string
 ) {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch(launchOptions);
   const page = await browser.newPage();
   await page.setContent(
     postTemplate

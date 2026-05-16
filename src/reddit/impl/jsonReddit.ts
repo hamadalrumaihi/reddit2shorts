@@ -1,11 +1,14 @@
 import axios, { AxiosError } from "axios";
 import { RedditInterface } from "../RedditInterface";
 import {
+  passesPostFilters,
+  PostFilters,
   RedditCategory,
   RedditComment,
   RedditPost,
   Timespan,
 } from "../types";
+import { getSeenIds, isPermalinkSeen } from "../../utils/seenPosts";
 
 /**
  * A {@link RedditInterface} implementation backed by Reddit's public `.json`
@@ -20,7 +23,7 @@ const BASE_URL = "https://www.reddit.com";
 const RATE_LIMIT_WAIT_MS = 60_000;
 
 // Minimal shapes of the parts of Reddit's JSON responses we read.
-interface RawPostData {
+export interface RawPostData {
   title: string;
   selftext: string;
   permalink: string;
@@ -34,9 +37,10 @@ interface RawPostData {
   is_video: boolean;
   media: unknown;
   url: string;
+  over_18: boolean;
 }
 
-interface RawCommentData {
+export interface RawCommentData {
   body: string;
   body_html: string;
   author: string;
@@ -53,7 +57,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function mapPost(data: RawPostData): RedditPost {
+export function mapPost(data: RawPostData): RedditPost {
   return {
     title: data.title,
     selftext: data.selftext,
@@ -71,7 +75,7 @@ function mapPost(data: RawPostData): RedditPost {
   };
 }
 
-function mapComment(data: RawCommentData): RedditComment {
+export function mapComment(data: RawCommentData): RedditComment {
   return {
     body: data.body,
     body_html: data.body_html,
@@ -120,8 +124,10 @@ export class JsonReddit implements RedditInterface {
     subreddits: string[],
     category: RedditCategory = "hot",
     topTime: Timespan = "day",
-    postLimit = 30
+    postLimit = 30,
+    filters: PostFilters = {}
   ): Promise<RedditPost | null> {
+    const seen = getSeenIds();
     for (const subName of subreddits) {
       try {
         const listing = await this.fetchJson<Listing<RawPostData>>(
@@ -137,7 +143,18 @@ export class JsonReddit implements RedditInterface {
             !post.media &&
             !post.url.match(/\.(jpg|jpeg|png|gif|mp4|webm)$/i) &&
             !post.url.includes("i.redd.it") &&
-            !post.url.includes("imgur.com")
+            !post.url.includes("imgur.com") &&
+            !isPermalinkSeen(post.permalink, seen) &&
+            passesPostFilters(
+              {
+                ups: post.ups,
+                numComments: post.num_comments,
+                createdUtc: post.created_utc,
+                over18: post.over_18,
+                bodyLength: post.selftext.length,
+              },
+              filters
+            )
         );
 
         if (textOnlyPosts.length > 0) {

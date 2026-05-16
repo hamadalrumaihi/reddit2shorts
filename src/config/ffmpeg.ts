@@ -1,11 +1,16 @@
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
+import ffmpegStaticPath from "ffmpeg-static";
 
-if (!ffmpegPath) {
-  throw new Error(
-    "ffmpeg-static did not resolve a binary path. Is the package installed?"
-  );
+/**
+ * Resolve ffmpeg without throwing at import time (so `--doctor` can still run
+ * to diagnose a missing binary). Priority:
+ *   1. FFMPEG_PATH env var (system/winget/brew ffmpeg)
+ *   2. ffmpeg-static bundled binary
+ *   3. fall back to whatever `ffmpeg` is on PATH (don't pin a path)
+ */
+const resolved = process.env.FFMPEG_PATH || ffmpegStaticPath || null;
+if (resolved) {
+  ffmpeg.setFfmpegPath(resolved);
 }
-ffmpeg.setFfmpegPath(ffmpegPath);
 
 export default ffmpeg;
