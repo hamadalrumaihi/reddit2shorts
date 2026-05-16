@@ -1,10 +1,11 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  REDDIT_CLIENT_ID: z.string().min(1),
-  REDDIT_CLIENT_SECRET: z.string().min(1),
-  REDDIT_USERNAME: z.string().min(1),
-  REDDIT_PASSWORD: z.string().min(1),
+  // Optional: only required when running with `--source reddit`.
+  REDDIT_CLIENT_ID: z.string().min(1).optional(),
+  REDDIT_CLIENT_SECRET: z.string().min(1).optional(),
+  REDDIT_USERNAME: z.string().min(1).optional(),
+  REDDIT_PASSWORD: z.string().min(1).optional(),
   GEMINI_API_KEY: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),

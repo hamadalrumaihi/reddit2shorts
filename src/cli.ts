@@ -11,8 +11,10 @@ import ora from "ora";
 import { Submission } from "snoowrap";
 import env from "./config/env";
 import { subreddits } from "./constants/subreddits";
+import { RedditInterface } from "./reddit/RedditInterface";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
+import { GeminiStory } from "./storySource/geminiStory";
 import { GoogleCloudTts } from "./tts/impl/googleCloudTts";
 import { TiktokTts } from "./tts/impl/tiktokTts";
 import { TtsInterface } from "./tts/tts";
@@ -30,6 +32,11 @@ program
     "-s, --subreddits <subreddit...>",
     "List of subreddits to choose text post from",
     subreddits
+  )
+  .option(
+    "--source <source>",
+    "Where stories come from: 'gemini' (AI-generated) or 'reddit'",
+    "gemini"
   )
   .option("-r, --random", "Make short from a random post")
   .option("-p, --postId <postId>", "Make short from the post with id")
@@ -67,31 +74,54 @@ const options = program.opts() as Record<string, any>;
 
 async function main() {
   try {
-    if (!options.postId && !options.random) {
-      console.error(
-        "Error: You must provide either --postId <postId> or --random"
-      );
+    if (options.source !== "gemini" && options.source !== "reddit") {
+      console.error("Error: --source must be either 'gemini' or 'reddit'");
       process.exit(1);
     }
 
-    const reddit = new SnoowrapReddit(
-      env.REDDIT_CLIENT_ID,
-      env.REDDIT_CLIENT_SECRET,
-      env.REDDIT_USERNAME,
-      env.REDDIT_PASSWORD
-    );
-
+    let reddit: RedditInterface;
     let post: Submission | undefined;
     let tts: TtsInterface | undefined;
 
-    if (options.random) {
-      post = await reddit.getTextOnlyPostFromList(
-        options.subreddits,
-        options.category,
-        options.timeSpan
+    if (options.source === "reddit") {
+      if (!options.postId && !options.random) {
+        console.error(
+          "Error: with --source reddit you must provide either --postId <postId> or --random"
+        );
+        process.exit(1);
+      }
+
+      if (
+        !env.REDDIT_CLIENT_ID ||
+        !env.REDDIT_CLIENT_SECRET ||
+        !env.REDDIT_USERNAME ||
+        !env.REDDIT_PASSWORD
+      ) {
+        console.error(
+          "Error: --source reddit requires REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USERNAME and REDDIT_PASSWORD in .env"
+        );
+        process.exit(1);
+      }
+
+      reddit = new SnoowrapReddit(
+        env.REDDIT_CLIENT_ID,
+        env.REDDIT_CLIENT_SECRET,
+        env.REDDIT_USERNAME,
+        env.REDDIT_PASSWORD
       );
-    } else if (options.postId) {
-      post = await reddit.getPost(options.postId);
+
+      if (options.random) {
+        post = await reddit.getTextOnlyPostFromList(
+          options.subreddits,
+          options.category,
+          options.timeSpan
+        );
+      } else if (options.postId) {
+        post = await reddit.getPost(options.postId);
+      }
+    } else {
+      reddit = new GeminiStory(env.GEMINI_API_KEY, options.subreddits);
+      post = await reddit.getPost(options.postId ?? "");
     }
 
     if (!post) {

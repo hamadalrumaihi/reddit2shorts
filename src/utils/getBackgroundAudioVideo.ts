@@ -2,7 +2,6 @@ import { mkdir, access } from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
-import { error } from 'console';
 
 const execAsync = promisify(exec);
 async function fileExists(filePath: string) {
@@ -16,8 +15,8 @@ async function fileExists(filePath: string) {
 
 export async function downloadBackgroundAssets(videoUrl: string, audioUrl: string) {
     const shortsDir = "shorts"
-    const mp3Path = path.join(shortsDir, 'audio.mp3');
-    const mp4Path = path.join(shortsDir, 'video.mp4');
+    const mp3Path = path.join(shortsDir, 'bgAudio.mp3');
+    const mp4Path = path.join(shortsDir, 'bgVideo.mp4');
 
     try {
         // Ensure 'shorts/' directory exists
@@ -38,9 +37,9 @@ export async function downloadBackgroundAssets(videoUrl: string, audioUrl: strin
         }
 
     } catch (err) {
-        let message = "Unkown error"
-        if (error instanceof Error)
-            message = error.message
+        let message = "Unknown error"
+        if (err instanceof Error)
+            message = err.message
         console.error('Error:', message);
         throw err;
     }
