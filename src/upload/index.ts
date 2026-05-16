@@ -1,4 +1,4 @@
-import env from "../config/env";
+import { requireEnv } from "../config/env";
 import fs from "fs";
 import { google } from "googleapis";
 
@@ -8,12 +8,12 @@ export async function uploadToYoutube(
   description: string,
   tags: string[],
 ) {
-  const CLIENT_ID = env.GOOGLE_CLIENT_ID;
-  const CLIENT_SECRET = env.GOOGLE_CLIENT_SECRET;
+  const CLIENT_ID = requireEnv("GOOGLE_CLIENT_ID", "--upload youtube");
+  const CLIENT_SECRET = requireEnv("GOOGLE_CLIENT_SECRET", "--upload youtube");
   const REDIRECT_URI = "https://developers.google.com/oauthplayground";
 
-  const ACCESS_TOKEN = env.GOOGLE_ACCESS_TOKEN;
-  const REFRESH_TOKEN = env.GOOGLE_REFRESH_TOKEN;
+  const ACCESS_TOKEN = requireEnv("GOOGLE_ACCESS_TOKEN", "--upload youtube");
+  const REFRESH_TOKEN = requireEnv("GOOGLE_REFRESH_TOKEN", "--upload youtube");
 
   // Initialize OAuth2 client
   const oauth2Client = new google.auth.OAuth2(
