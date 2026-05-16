@@ -40,6 +40,35 @@ interface RawComment {
   score: number;
 }
 
+interface ListingOpts {
+  limit: number;
+  time?: Timespan;
+}
+
+// A minimal, correctly-typed view of the snoowrap client methods we use,
+// avoiding snoowrap's own recursively-thenable (TS1062) types.
+interface SnoowrapLike {
+  getSubmission(id: string): {
+    fetch(): Promise<
+      RawSubmission & {
+        comments: {
+          fetchMore(opts: {
+            amount: number;
+            skipReplies: boolean;
+          }): Promise<RawComment[]>;
+        };
+      }
+    >;
+  };
+  getSubreddit(name: string): {
+    getHot(opts: ListingOpts): Promise<RawSubmission[]>;
+    getNew(opts: ListingOpts): Promise<RawSubmission[]>;
+    getTop(opts: ListingOpts): Promise<RawSubmission[]>;
+    getControversial(opts: ListingOpts): Promise<RawSubmission[]>;
+  };
+  getUser(name: string): { fetch(): Promise<{ icon_img: string }> };
+}
+
 function mapSubmission(post: RawSubmission): RedditPost {
   return {
     title: post.title,
@@ -98,8 +127,8 @@ export class SnoowrapReddit implements RedditInterface {
   }
 
   // snoowrap's recursive thenable types are unusable; see file header.
-  private get api(): any {
-    return this.client;
+  private get api(): SnoowrapLike {
+    return this.client as unknown as SnoowrapLike;
   }
 
   async getPost(id: string): Promise<RedditPost> {
@@ -163,9 +192,7 @@ export class SnoowrapReddit implements RedditInterface {
 
   async getTopComments(
     post: RedditPost,
-    count: number = 5,
-    _textOnly: boolean = true,
-    _excludeMods: boolean = true
+    count: number = 5
   ): Promise<RedditComment[]> {
     // The interface hands us a plain RedditPost, not a live snoowrap
     // Submission, so fetch the comment tree via the post id.
