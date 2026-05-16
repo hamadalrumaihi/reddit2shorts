@@ -1,5 +1,5 @@
 import { RedditInterface } from "../reddit/RedditInterface";
-import { RedditPost } from "../reddit/types";
+import { RedditComment, RedditPost } from "../reddit/types";
 import { TtsInterface } from "../tts/tts";
 import {
   combineVideos,
@@ -7,7 +7,6 @@ import {
   addBackgroundVideo,
 } from "./utils/ffmpeg";
 import { mkdir, readdir, rm } from "fs/promises";
-import { SnoowrapReddit } from "../reddit/impl/snoowrapReddit";
 import { formatDistanceToNow, fromUnixTime } from "date-fns";
 import * as cheerio from "cheerio";
 import numbro from "numbro";
@@ -173,7 +172,7 @@ async function createCommentsAudio({
   audioFolderPath,
   tts,
 }: {
-  comments: any[];
+  comments: RedditComment[];
   audioFolderPath: string;
   tts: TtsInterface;
 }) {
@@ -198,7 +197,7 @@ async function createCommentsScreenshots({
   imgFolderPath,
   reddit,
 }: {
-  comments: any[];
+  comments: RedditComment[];
   imgFolderPath: string;
   reddit: RedditInterface;
 }) {
@@ -239,7 +238,7 @@ async function createCommentsPostVideos({
         videoFolderPath
       );
     } catch (err) {
-      console.error(`⚠️ Skipping comment video ${file}`);
+      console.error(`⚠️ Skipping comment video ${file}`, err);
     }
   }
 }

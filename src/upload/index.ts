@@ -52,9 +52,7 @@ export async function uploadToYoutube(
 
     return `https://www.youtube.com/watch?v=${res.data.id}`;
   } catch (error) {
-    let message = "Unkown error";
-    if (error instanceof Error) message = error.message;
-    console.log(error);
+    console.error("YouTube upload failed:", error);
     throw error;
   }
 }

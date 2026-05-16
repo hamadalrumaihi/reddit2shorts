@@ -20,22 +20,22 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   cd reddit2shorts
   mv .env.example .env # populate it
   bun install
-  bun src/cli.ts --random --upload youtube                       # default: snoowrap (Reddit API, needs creds)
-  bun src/cli.ts --source json --random --upload youtube          # Reddit public JSON, no credentials
+  bun src/cli.ts --random --upload youtube                       # default: json (Reddit public JSON, no Reddit creds)
+  bun src/cli.ts --source snoowrap --random --upload youtube      # Reddit API (needs creds)
   bun src/cli.ts --source gemini --upload youtube                 # AI-generated story
 ```
 ## Environment Variables
 
 To run this project, you will need to rename .env.example to .env add the following
 
-get from https://www.reddit.com/prefs/apps, set type to personal use script (only required with `--source snoowrap`, the default; not needed for `--source json` or `--source gemini`)
+get from https://www.reddit.com/prefs/apps, set type to personal use script (only required with `--source snoowrap`; NOT needed for the default `--source json` or for `--source gemini`)
 `REDDIT_CLIENT_ID`  
 `REDDIT_CLIENT_SECRET`  
 `REDDIT_USERNAME`  
 `REDDIT_PASSWORD`    
 
  get from [google cloud console](https://console.cloud.google.com/) ->IAM->service account ->create service account ->manage kes ->create and download key as json ans set the variable to the key inside quotes 
-`GOOGLE_APPLICATION_CREDENTIALS`  
+`GOOGLE_CREDENTIALS`  
 
 get from https://aistudio.google.com/app/apikey  
 `GEMINI_API_KEY`  
@@ -59,8 +59,8 @@ Options:
   -V, --version                       output the version number
   -s --subreddits <subreddit...>      List of subreddits to choose text post from (default:
                                       ["AskReddit","TIFU"])
-  --source <source>                   Story source: "snoowrap" (Reddit API, default), "json" (Reddit public JSON, no creds) or "gemini" (AI-generated)
-  -r, --random                        Make short from a random post (snoowrap/json only)
+  --source <source>                   Story source: "json" (Reddit public JSON, no creds — default), "snoowrap" (Reddit API) or "gemini" (AI-generated)
+  -r, --random                        Make short from a random post (json/snoowrap only)
   -p, --postId <postId>               Make short from the post with id
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
   -t --tts <tts>                      Which tts to use (default: "google")

@@ -39,7 +39,8 @@ export async function screenshotComment(
     throw new Error(`Element not found`);
   }
 
-  await element.screenshot({ path: outputPath });
+  // Callers always pass a .png path; assert it for puppeteer's typed overload.
+  await element.screenshot({ path: outputPath as `${string}.png` });
 
   await browser.close();
 }
@@ -83,7 +84,8 @@ export async function screenshotPost(
     throw new Error(`Element not found`);
   }
 
-  await element.screenshot({ path: outputPath });
+  // Callers always pass a .png path; assert it for puppeteer's typed overload.
+  await element.screenshot({ path: outputPath as `${string}.png` });
 
   await browser.close();
 }

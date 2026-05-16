@@ -11,7 +11,7 @@ import ora from "ora";
 import env from "./config/env";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
-import { RedditPost } from "./reddit/types";
+import { RedditCategory, RedditPost, Timespan } from "./reddit/types";
 import { JsonReddit } from "./reddit/impl/jsonReddit";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
@@ -36,8 +36,8 @@ program
   )
   .option(
     "--source <source>",
-    "Story source: 'snoowrap' (Reddit API, needs creds), 'json' (Reddit public JSON, no creds), or 'gemini' (AI-generated)",
-    "snoowrap"
+    "Story source: 'json' (Reddit public JSON, no creds — default), 'snoowrap' (Reddit API, needs creds), or 'gemini' (AI-generated)",
+    "json"
   )
   .option("-r, --random", "Make short from a random post")
   .option("-p, --postId <postId>", "Make short from the post with id")
@@ -69,9 +69,27 @@ program
     "https://www.youtube.com/watch?v=XBIaqOm0RKQ",
   ]);
 
+interface CliOptions {
+  source: string;
+  subreddits: string[];
+  random?: boolean;
+  postId?: string;
+  commentsCount: string;
+  tts: string;
+  upload?: string;
+  gTtsVoice: string;
+  gTtsLang: string;
+  gTtsGender: string;
+  category: RedditCategory;
+  timeSpan: Timespan;
+  tags: string[];
+  bgAudio: string[] | string;
+  bgVideo: string[] | string;
+}
+
 program.parse(process.argv);
 
-const options = program.opts() as Record<string, any>;
+const options = program.opts<CliOptions>();
 
 async function main() {
   try {
