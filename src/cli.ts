@@ -24,6 +24,7 @@ import { uploadToYoutube } from "./upload";
 import { uploadToTiktok } from "./upload/tiktok";
 import { uploadToTiktokWithSession } from "./upload/tiktokSession";
 import { downloadBackgroundAssets } from "./utils/getBackgroundAudioVideo";
+import { doctorPassed, formatDoctor, runDoctor } from "./utils/doctor";
 import { getShortTitle } from "./utils/getShortTitle";
 import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
 
@@ -42,6 +43,11 @@ program
     "--source <source>",
     "Story source: 'json' (Reddit public JSON, no creds — default), 'snoowrap' (Reddit API, needs creds), or 'gemini' (AI-generated)",
     "json"
+  )
+  .option("--doctor", "Check environment (yt-dlp, ffmpeg, disk) and exit")
+  .option(
+    "--dry-run",
+    "Validate environment + do a sample post fetch, but produce no video"
   )
   .option("-r, --random", "Make short from a random post")
   .option("-p, --postId <postId>", "Make short from the post with id")
@@ -102,6 +108,8 @@ interface CliOptions {
   tags: string[];
   bgAudio: string[] | string;
   bgVideo: string[] | string;
+  doctor?: boolean;
+  dryRun?: boolean;
 }
 
 program.parse(process.argv);
@@ -110,6 +118,12 @@ const options = program.opts<CliOptions>();
 
 async function main() {
   try {
+    if (options.doctor) {
+      const results = await runDoctor();
+      console.log(formatDoctor(results));
+      process.exit(doctorPassed(results) ? 0 : 1);
+    }
+
     if (!["snoowrap", "json", "gemini"].includes(options.source)) {
       console.error(
         "Error: --source must be one of 'snoowrap', 'json' or 'gemini'"
@@ -174,6 +188,17 @@ async function main() {
       process.exit(1);
     }
 
+    if (options.dryRun) {
+      const results = await runDoctor();
+      console.log(formatDoctor(results));
+      console.log(
+        `\n✅ Sample fetch OK (--source ${options.source}):\n` +
+          `   "${post.title}" — ${post.subreddit_name_prefixed}\n` +
+          `\nDry run complete. No video produced.`
+      );
+      process.exit(doctorPassed(results) ? 0 : 1);
+    }
+
     // normalize comments count to number
     const commentsCount = Number.parseInt(options.commentsCount, 10) || 10;
     const maxDuration = Number.parseInt(options.maxDuration, 10) || 59;
@@ -207,10 +232,8 @@ async function main() {
       : [options.bgAudio];
 
     const spinnerBg = ora("Getting background assets ready").start();
-    await downloadBackgroundAssets(
-      bgVideo[Math.floor(Math.random() * bgVideo.length)],
-      bgAudio[Math.floor(Math.random() * bgAudio.length)]
-    );
+    // Pass the full pools so a failed source falls back to the next.
+    await downloadBackgroundAssets(bgVideo, bgAudio);
     spinnerBg.succeed("Background assets ready");
 
     const output = await createShortFromPost({
