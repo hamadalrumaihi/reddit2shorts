@@ -1,15 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
-import { Comment, Submission } from "snoowrap";
 import { z } from "zod";
 import { RedditInterface } from "../reddit/RedditInterface";
+import { RedditComment, RedditPost } from "../reddit/types";
 
 /**
  * A {@link RedditInterface} implementation that generates a fictional Reddit
  * story (post + comments) with Gemini instead of fetching real content.
  *
- * The objects it returns are shaped to match the subset of snoowrap's
- * `Submission`/`Comment` that the rest of the pipeline reads, so it is a
- * drop-in replacement for `SnoowrapReddit` and nothing downstream changes.
+ * It returns the same local `RedditPost`/`RedditComment` shapes as the other
+ * implementations, so it is a drop-in source and nothing downstream changes.
  */
 
 const storySchema = z.object({
@@ -100,7 +99,7 @@ Include between 5 and 10 comments. Vary their tone and length. Keep everything f
     return this.cached;
   }
 
-  private buildSubmission(story: GeneratedStory): Submission {
+  private buildSubmission(story: GeneratedStory): RedditPost {
     const slug = story.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "_")
@@ -108,11 +107,9 @@ Include between 5 and 10 comments. Vary their tone and length. Keep everything f
       .slice(0, 50);
     const id = Math.random().toString(36).slice(2, 9);
 
-    const submission = {
-      id,
+    return {
       title: story.title,
       selftext: story.body,
-      selftext_html: `<div class="md"><p>${escapeHtml(story.body)}</p></div>`,
       subreddit_name_prefixed: `r/${story.subreddit}`,
       subreddit: { display_name: story.subreddit },
       permalink: `/r/${story.subreddit}/comments/${id}/${slug}/`,
@@ -125,15 +122,12 @@ Include between 5 and 10 comments. Vary their tone and length. Keep everything f
       media: null,
       url: `https://www.reddit.com/r/${story.subreddit}/comments/${id}/${slug}/`,
     };
-
-    return submission as unknown as Submission;
   }
 
-  private buildComments(story: GeneratedStory, count: number): Comment[] {
+  private buildComments(story: GeneratedStory, count: number): RedditComment[] {
     return story.comments.slice(0, count).map((comment, index) => {
       const ups = comment.ups ?? 50 + Math.floor(Math.random() * 5000);
-      const built = {
-        id: `${index}`,
+      return {
         body: comment.body,
         body_html: `<div class="md"><p>${escapeHtml(comment.body)}</p></div>`,
         author: { name: comment.author },
@@ -141,22 +135,21 @@ Include between 5 and 10 comments. Vary their tone and length. Keep everything f
         ups,
         score: ups,
       };
-      return built as unknown as Comment;
     });
   }
 
   // Signatures intentionally take fewer params than RedditInterface: the
   // generated story ignores ids/subreddits/category, so the unused trailing
   // params are dropped (a narrower method is still interface-assignable).
-  async getPost(): Promise<Submission> {
+  async getPost(): Promise<RedditPost> {
     return this.buildSubmission(await this.generate());
   }
 
-  async getTextOnlyPostFromList(): Promise<Submission> {
+  async getTextOnlyPostFromList(): Promise<RedditPost> {
     return this.buildSubmission(await this.generate());
   }
 
-  async getTopComments(post: Submission, count = 5): Promise<Comment[]> {
+  async getTopComments(_post: RedditPost, count = 5): Promise<RedditComment[]> {
     return this.buildComments(await this.generate(), count);
   }
 

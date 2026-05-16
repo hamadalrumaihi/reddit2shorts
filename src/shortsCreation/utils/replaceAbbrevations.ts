@@ -1,5 +1,5 @@
 export function replaceRedditAbbreviations(text: string) {
-  const replacements = {
+  const replacements: Record<string, string> = {
     "\\bOP\\b": "Original Poster",
     "\\bTL;DR\\b": "Too Long; Didn’t Read",
     "\\bIMO\\b": "In My Opinion",
