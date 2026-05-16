@@ -90,6 +90,14 @@ Options:
   -p, --postId <postId>               Make short from the post with id
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
   --maxDuration <seconds>             Hard cap on final short length (default: "59"; YouTube Shorts <= 60s)
+  --minScore <n>                      Min post score for --random (default: "1000")
+  --minComments <n>                   Min comment count for --random (default: "50")
+  --maxAgeDays <n>                    Max post age in days for --random, 0=off (default: "7")
+  --allowNsfw                         Allow NSFW posts (default: off)
+  --minBodyChars <n>                  Min post body length (default: "0")
+  --maxBodyChars <n>                  Max post body length, 0=off (default: "0")
+  --doctor                            Check environment (yt-dlp, ffmpeg, disk) and exit
+  --dry-run                           Validate env + sample fetch, no video output
   -t --tts <tts>                      Which tts to use: "edge" (no creds — default), "google" or "tiktok"
   -u --upload <platform>              Upload after render: "youtube", "tiktok" (session cookie) or "tiktok-api" (official)
   -g --tags <tags...>                 Tags for video title (default: ["shorts","reddit","redditstories"])

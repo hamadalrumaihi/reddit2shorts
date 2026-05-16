@@ -1,6 +1,8 @@
 import axios, { AxiosError } from "axios";
 import { RedditInterface } from "../RedditInterface";
 import {
+  passesPostFilters,
+  PostFilters,
   RedditCategory,
   RedditComment,
   RedditPost,
@@ -35,6 +37,7 @@ interface RawPostData {
   is_video: boolean;
   media: unknown;
   url: string;
+  over_18: boolean;
 }
 
 interface RawCommentData {
@@ -121,7 +124,8 @@ export class JsonReddit implements RedditInterface {
     subreddits: string[],
     category: RedditCategory = "hot",
     topTime: Timespan = "day",
-    postLimit = 30
+    postLimit = 30,
+    filters: PostFilters = {}
   ): Promise<RedditPost | null> {
     const seen = getSeenIds();
     for (const subName of subreddits) {
@@ -140,7 +144,17 @@ export class JsonReddit implements RedditInterface {
             !post.url.match(/\.(jpg|jpeg|png|gif|mp4|webm)$/i) &&
             !post.url.includes("i.redd.it") &&
             !post.url.includes("imgur.com") &&
-            !isPermalinkSeen(post.permalink, seen)
+            !isPermalinkSeen(post.permalink, seen) &&
+            passesPostFilters(
+              {
+                ups: post.ups,
+                numComments: post.num_comments,
+                createdUtc: post.created_utc,
+                over18: post.over_18,
+                bodyLength: post.selftext.length,
+              },
+              filters
+            )
         );
 
         if (textOnlyPosts.length > 0) {

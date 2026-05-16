@@ -1,4 +1,5 @@
 import {
+  PostFilters,
   RedditCategory,
   RedditComment,
   RedditPost,
@@ -11,7 +12,8 @@ export interface RedditInterface {
     subreddits: string[],
     category: RedditCategory,
     topTime: Timespan,
-    postLimit?: number
+    postLimit?: number,
+    filters?: PostFilters
   ): Promise<RedditPost | null>;
   getTopComments(
     post: RedditPost,

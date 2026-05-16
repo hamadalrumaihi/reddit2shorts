@@ -11,7 +11,12 @@ import ora from "ora";
 import env, { requireEnv } from "./config/env";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
-import { RedditCategory, RedditPost, Timespan } from "./reddit/types";
+import {
+  PostFilters,
+  RedditCategory,
+  RedditPost,
+  Timespan,
+} from "./reddit/types";
 import { JsonReddit } from "./reddit/impl/jsonReddit";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
@@ -61,6 +66,12 @@ program
     "Hard cap on final short length (YouTube Shorts must be <= 60s)",
     "59"
   )
+  .option("--minScore <n>", "Min post score for --random", "1000")
+  .option("--minComments <n>", "Min comment count for --random", "50")
+  .option("--maxAgeDays <n>", "Max post age in days for --random (0=off)", "7")
+  .option("--allowNsfw", "Allow NSFW posts (default: off)")
+  .option("--minBodyChars <n>", "Min post body length", "0")
+  .option("--maxBodyChars <n>", "Max post body length (0=off)", "0")
   .option(
     "-t, --tts <tts>",
     "Which tts to use: 'edge' (no creds — default), 'google' or 'tiktok'",
@@ -98,6 +109,12 @@ interface CliOptions {
   postId?: string;
   commentsCount: string;
   maxDuration: string;
+  minScore: string;
+  minComments: string;
+  maxAgeDays: string;
+  allowNsfw?: boolean;
+  minBodyChars: string;
+  maxBodyChars: string;
   tts: string;
   upload?: string;
   gTtsVoice: string;
@@ -173,10 +190,20 @@ async function main() {
       }
 
       if (options.random) {
+        const filters: PostFilters = {
+          minScore: Number.parseInt(options.minScore, 10) || 0,
+          minComments: Number.parseInt(options.minComments, 10) || 0,
+          maxAgeDays: Number.parseInt(options.maxAgeDays, 10) || 0,
+          allowNsfw: !!options.allowNsfw,
+          minBodyChars: Number.parseInt(options.minBodyChars, 10) || 0,
+          maxBodyChars: Number.parseInt(options.maxBodyChars, 10) || 0,
+        };
         post = await reddit.getTextOnlyPostFromList(
           options.subreddits,
           options.category,
-          options.timeSpan
+          options.timeSpan,
+          undefined,
+          filters
         );
       } else if (options.postId) {
         post = await reddit.getPost(options.postId);
