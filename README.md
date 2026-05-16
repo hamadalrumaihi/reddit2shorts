@@ -28,6 +28,16 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   bun src/cli.ts --source gemini                                   # AI-generated story (needs GEMINI_API_KEY)
 ```
 
+### One-click run
+
+After cloning once, you don't need to remember commands:
+
+- **Windows:** double-click `run.bat` (or `run.bat --preset aita-judgment`)
+- **macOS/Linux:** `./run.sh` (or `./run.sh --minScore 200`)
+
+It updates the repo, installs deps, runs the environment check, then renders
+a short into `shorts/`. Any extra args are passed straight to the CLI.
+
 ### Run on Replit (works from a phone)
 
 This repo ships `.replit` and `replit.nix`, so you can run it without a local machine:
