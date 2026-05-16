@@ -12,6 +12,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "trustedDependencies": [
+    "puppeteer",
+    "ffmpeg-static"
+  ],
   "type": "commonjs",
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.1.0",
