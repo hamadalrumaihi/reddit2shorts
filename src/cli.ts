@@ -30,7 +30,9 @@ import { uploadToYoutube } from "./upload";
 import { uploadToTiktok } from "./upload/tiktok";
 import { uploadToTiktokWithSession } from "./upload/tiktokSession";
 import { downloadBackgroundAssets } from "./utils/getBackgroundAudioVideo";
+import { cleanGeneratedVideos } from "./utils/cleanup";
 import { doctorPassed, formatDoctor, runDoctor } from "./utils/doctor";
+import { logEvent, setJsonLogging } from "./utils/logger";
 import { getShortTitle } from "./utils/getShortTitle";
 import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
 
@@ -63,6 +65,12 @@ program
     "--dry-run",
     "Validate environment + do a sample post fetch, but produce no video"
   )
+  .option(
+    "--clean",
+    "Delete generated videos under shorts/ (keeps bg cache) and exit"
+  )
+  .option("--cleanDays <n>", "With --clean, only remove folders older than n days", "0")
+  .option("--json", "Emit structured JSON event logs to stdout")
   .option("-r, --random", "Make short from a random post")
   .option("-p, --postId <postId>", "Make short from the post with id")
   .option(
@@ -114,6 +122,9 @@ program
 interface CliOptions {
   preset?: string;
   config?: string;
+  clean?: boolean;
+  cleanDays: string;
+  json?: boolean;
   source: string;
   subreddits: string[];
   random?: boolean;
@@ -146,9 +157,21 @@ const options = resolveOptions<CliOptions>(program);
 
 async function main() {
   try {
+    setJsonLogging(!!options.json);
+
+    if (options.clean) {
+      const removed = await cleanGeneratedVideos(
+        Number.parseInt(options.cleanDays, 10) || 0
+      );
+      console.log(`Removed ${removed} generated video folder(s) from shorts/.`);
+      logEvent("clean", { removed });
+      process.exit(0);
+    }
+
     if (options.doctor) {
       const results = await runDoctor();
       console.log(formatDoctor(results));
+      logEvent("doctor", { passed: doctorPassed(results) });
       process.exit(doctorPassed(results) ? 0 : 1);
     }
 
@@ -223,8 +246,15 @@ async function main() {
 
     if (!post) {
       console.error("Error: Could not fetch the Reddit post.");
+      logEvent("error", { stage: "fetch", message: "no post" });
       process.exit(1);
     }
+
+    logEvent("post_selected", {
+      source: options.source,
+      title: post.title,
+      subreddit: post.subreddit_name_prefixed,
+    });
 
     if (options.dryRun) {
       const results = await runDoctor();
@@ -282,6 +312,8 @@ async function main() {
       maxDuration,
     });
 
+    logEvent("render_complete", { output });
+
     // Record the post so an automated/repeated run won't re-use it.
     // (Gemini stories are fictional one-offs — nothing to dedupe.)
     if (options.source !== "gemini") {
@@ -335,8 +367,13 @@ async function main() {
         console.error(err);
       }
     }
+    logEvent("done", { output });
   } catch (err) {
     console.error("Unexpected error:", err);
+    logEvent("error", {
+      stage: "pipeline",
+      message: err instanceof Error ? err.message : String(err),
+    });
     process.exit(1);
   }
 }
