@@ -19,14 +19,15 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   git clone https://github.com/yogeshdofficial/reddit2shorts
   cd reddit2shorts
   mv .env.example .env # populate it
-  npm install
-  ts-node --logError src/cli.ts --random --upload youtube
+  bun install
+  bun src/cli.ts --upload youtube              # default: Gemini-generated story
+  bun src/cli.ts --source reddit --random --upload youtube   # original Reddit flow
 ```
 ## Environment Variables
 
 To run this project, you will need to rename .env.example to .env add the following
 
-get from https://www.reddit.com/prefs/apps, set type to personal use script
+get from https://www.reddit.com/prefs/apps, set type to personal use script (only required with `--source reddit`)
 `REDDIT_CLIENT_ID`  
 `REDDIT_CLIENT_SECRET`  
 `REDDIT_USERNAME`  
@@ -57,7 +58,8 @@ Options:
   -V, --version                       output the version number
   -s --subreddits <subreddit...>      List of subreddits to choose text post from (default:
                                       ["AskReddit","TIFU"])
-  -r, --random                        Make short from a random post
+  --source <source>                   Story source: "gemini" (AI-generated, default) or "reddit"
+  -r, --random                        Make short from a random post (only with --source reddit)
   -p, --postId <postId>               Make short from the post with id
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
   -t --tts <tts>                      Which tts to use (default: "google")
