@@ -23,6 +23,7 @@ import { TtsInterface } from "./tts/tts";
 import { uploadToYoutube } from "./upload";
 import { downloadBackgroundAssets } from "./utils/getBackgroundAudioVideo";
 import { getShortTitle } from "./utils/getShortTitle";
+import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
 
 const program = new Command();
 
@@ -46,6 +47,11 @@ program
     "-c, --commentsCount <commentsCount>",
     "Number of comments to include",
     "10"
+  )
+  .option(
+    "--maxDuration <seconds>",
+    "Hard cap on final short length (YouTube Shorts must be <= 60s)",
+    "59"
   )
   .option(
     "-t, --tts <tts>",
@@ -80,6 +86,7 @@ interface CliOptions {
   random?: boolean;
   postId?: string;
   commentsCount: string;
+  maxDuration: string;
   tts: string;
   upload?: string;
   gTtsVoice: string;
@@ -164,6 +171,7 @@ async function main() {
 
     // normalize comments count to number
     const commentsCount = Number.parseInt(options.commentsCount, 10) || 10;
+    const maxDuration = Number.parseInt(options.maxDuration, 10) || 59;
 
     switch (options.tts) {
       case "edge":
@@ -205,7 +213,15 @@ async function main() {
       reddit,
       tts,
       commentsCount,
+      maxDuration,
     });
+
+    // Record the post so an automated/repeated run won't re-use it.
+    // (Gemini stories are fictional one-offs — nothing to dedupe.)
+    if (options.source !== "gemini") {
+      const seenId = postIdFromPermalink(post.permalink);
+      if (seenId) markSeen(seenId);
+    }
 
     if (options.upload === "youtube") {
       const shortTitle = await getShortTitle(

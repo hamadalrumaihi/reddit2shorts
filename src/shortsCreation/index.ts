@@ -38,11 +38,13 @@ export async function createShortFromPost({
   reddit,
   tts,
   commentsCount,
+  maxDuration = 59,
 }: {
   post: RedditPost;
   reddit: RedditInterface;
   tts: TtsInterface;
   commentsCount: number;
+  maxDuration?: number;
 }) {
   const comments = await reddit.getTopComments(post, commentsCount, true, true);
 
@@ -109,7 +111,8 @@ export async function createShortFromPost({
   await addBackgroundVideo(
     `${shortsFolderPath}/bgVideo.mp4`,
     `${videoFolderPath}/combinedVideoWithBgAudio.mp4`,
-    `${postFolderPath}/output.mp4`
+    `${postFolderPath}/output.mp4`,
+    maxDuration
   );
   spinner8.succeed(`Video saved at ${postFolderPath}/output.mp4`);
 

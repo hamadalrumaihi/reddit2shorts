@@ -77,6 +77,7 @@ Options:
   -r, --random                        Make short from a random post (json/snoowrap only)
   -p, --postId <postId>               Make short from the post with id
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
+  --maxDuration <seconds>             Hard cap on final short length (default: "59"; YouTube Shorts <= 60s)
   -t --tts <tts>                      Which tts to use: "edge" (no creds — default), "google" or "tiktok"
   -u --upload <platform>              Upload to platform
   -g --tags <tags...>                 Tags for video title (default: ["shorts","reddit","redditstories"])
@@ -84,6 +85,10 @@ Options:
   -v --bgVideo <bgVideo>              Background video (default: "https://www.youtube.com/watch?v=XBIaqOm0RKQ")
   -h, --help                          display help for command
 ```
+
+Each successfully-rendered Reddit post is recorded in `.seen-posts.json`
+(gitignored) and skipped on later `--random` runs, so an automated/scheduled
+loop never re-posts the same content. Delete that file to reset.
 
 ## Troubleshooting
 

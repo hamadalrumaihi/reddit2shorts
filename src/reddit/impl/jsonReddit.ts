@@ -6,6 +6,7 @@ import {
   RedditPost,
   Timespan,
 } from "../types";
+import { getSeenIds, isPermalinkSeen } from "../../utils/seenPosts";
 
 /**
  * A {@link RedditInterface} implementation backed by Reddit's public `.json`
@@ -122,6 +123,7 @@ export class JsonReddit implements RedditInterface {
     topTime: Timespan = "day",
     postLimit = 30
   ): Promise<RedditPost | null> {
+    const seen = getSeenIds();
     for (const subName of subreddits) {
       try {
         const listing = await this.fetchJson<Listing<RawPostData>>(
@@ -137,7 +139,8 @@ export class JsonReddit implements RedditInterface {
             !post.media &&
             !post.url.match(/\.(jpg|jpeg|png|gif|mp4|webm)$/i) &&
             !post.url.includes("i.redd.it") &&
-            !post.url.includes("imgur.com")
+            !post.url.includes("imgur.com") &&
+            !isPermalinkSeen(post.permalink, seen)
         );
 
         if (textOnlyPosts.length > 0) {

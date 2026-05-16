@@ -6,6 +6,7 @@ import {
   RedditPost,
   Timespan,
 } from "../types";
+import { getSeenIds, isPermalinkSeen } from "../../utils/seenPosts";
 
 /**
  * snoowrap's published types are recursively thenable (every model is also a
@@ -142,6 +143,7 @@ export class SnoowrapReddit implements RedditInterface {
     topTime: Timespan = "day",
     postLimit = 30
   ): Promise<RedditPost | null> {
+    const seen = getSeenIds();
     for (const subName of subreddits) {
       try {
         const subreddit = this.api.getSubreddit(subName);
@@ -171,7 +173,8 @@ export class SnoowrapReddit implements RedditInterface {
             !post.media &&
             !post.url.match(/\.(jpg|jpeg|png|gif|mp4|webm)$/i) &&
             !post.url.includes("i.redd.it") &&
-            !post.url.includes("imgur.com")
+            !post.url.includes("imgur.com") &&
+            !isPermalinkSeen(post.permalink, seen)
         );
 
         if (textOnlyPosts.length > 0) {
