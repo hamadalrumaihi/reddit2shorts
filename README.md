@@ -34,7 +34,9 @@ This repo ships `.replit` and `replit.nix`, so you can run it without a local ma
 2. Press **Run**. Replit installs bun, yt-dlp and Chromium automatically, then runs the zero-credential default (`--source json --tts edge`).
 3. The finished video appears at `shorts/<id>/output.mp4` in the file tree.
 
-No credentials needed. If Reddit blocks Replit's datacenter IP (you'll see repeated `403` warnings), edit the `run` line in `.replit` to `bun install && bun src/cli.ts --source gemini` and add a free `GEMINI_API_KEY` in Replit's **Secrets** tab.
+No credentials needed. The Run button has a **dropdown with two options**:
+- **JSON (default)** — zero credentials.
+- **Gemini fallback** — use this if Reddit blocks Replit's datacenter IP (repeated `403` warnings). One-time setup: add a free `GEMINI_API_KEY` in Replit's **Secrets** tab, then pick this option from the Run dropdown. It never touches Reddit, so the IP block doesn't apply.
 
 ## Environment Variables
 

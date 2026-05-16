@@ -4,9 +4,23 @@ entrypoint = "src/cli.ts"
 [nix]
 channel = "stable-24_05"
 
-# Zero-credential defaults: --source json (no Reddit auth) + --tts edge
-# (no TTS auth). The finished video is written to shorts/<id>/output.mp4.
-#
-# If Reddit blocks Replit's IP (datacenter 403s), switch the run command to:
-#   bun install && bun src/cli.ts --source gemini
-# and add a free GEMINI_API_KEY in the Secrets tab.
+# Two one-tap Run options (use the Run button dropdown):
+#  - "JSON (default)": zero credentials. --source json + --tts edge.
+#  - "Gemini fallback": use if Reddit 403s Replit's IP. Needs a free
+#    GEMINI_API_KEY in the Secrets tab. No Reddit, no TTS creds.
+# Output video: shorts/<id>/output.mp4
+
+[workflows]
+runButton = "JSON (default)"
+
+[[workflows.workflow]]
+name = "JSON (default)"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bun install && bun src/cli.ts --random"
+
+[[workflows.workflow]]
+name = "Gemini fallback"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bun install && bun src/cli.ts --source gemini"
