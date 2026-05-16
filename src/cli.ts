@@ -8,10 +8,10 @@
 import { Command } from "commander";
 import "dotenv/config";
 import ora from "ora";
-import { Submission } from "snoowrap";
 import env from "./config/env";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
+import { RedditPost } from "./reddit/types";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
 import { GeminiStory } from "./storySource/geminiStory";
@@ -80,7 +80,7 @@ async function main() {
     }
 
     let reddit: RedditInterface;
-    let post: Submission | undefined;
+    let post: RedditPost | null | undefined;
     let tts: TtsInterface | undefined;
 
     if (options.source === "reddit") {

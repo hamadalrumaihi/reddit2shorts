@@ -1,5 +1,5 @@
-import { Submission } from "snoowrap";
 import { RedditInterface } from "../reddit/RedditInterface";
+import { RedditPost } from "../reddit/types";
 import { TtsInterface } from "../tts/tts";
 import {
   combineVideos,
@@ -40,7 +40,7 @@ export async function createShortFromPost({
   tts,
   commentsCount,
 }: {
-  post: Submission;
+  post: RedditPost;
   reddit: RedditInterface;
   tts: TtsInterface;
   commentsCount: number;
@@ -147,7 +147,7 @@ async function createTitleAudioAndScreenshot({
   audioFolderPath,
   imgFolderPath,
 }: {
-  post: Submission;
+  post: RedditPost;
   tts: TtsInterface;
   reddit: RedditInterface;
   audioFolderPath: string;

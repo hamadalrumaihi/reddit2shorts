@@ -1,19 +1,23 @@
-import { Comment, Submission } from "snoowrap";
-import { Timespan } from "snoowrap/dist/objects/Subreddit";
+import {
+  RedditCategory,
+  RedditComment,
+  RedditPost,
+  Timespan,
+} from "./types";
 
 export interface RedditInterface {
-  getPost(is: string): Promise<Submission>;
+  getPost(id: string): Promise<RedditPost>;
   getTextOnlyPostFromList(
     subreddits: string[],
-    category: "hot" | "new" | "top" | "controversial",
+    category: RedditCategory,
     topTime: Timespan,
-    postLimit: number
-  ): Promise<Submission>;
+    postLimit?: number
+  ): Promise<RedditPost | null>;
   getTopComments(
-    post: Submission,
+    post: RedditPost,
     count: number,
     textOnly: boolean,
     excludeMods: boolean
-  ): Promise<Comment[]>;
+  ): Promise<RedditComment[]>;
   getUserAvatarIfExists(username: string): Promise<string | null>;
 }
