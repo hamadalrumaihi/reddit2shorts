@@ -24,3 +24,6 @@ name = "Gemini fallback"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bun install && bun src/cli.ts --source gemini"
+
+[agent]
+expertMode = true
