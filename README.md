@@ -22,7 +22,8 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   bun install
   bun src/cli.ts --random                                         # ZERO credentials: json source + edge tts (defaults)
   bun src/cli.ts --random --upload youtube                         # add YouTube upload (needs GOOGLE_* creds)
-  bun src/cli.ts --random --upload tiktok                          # send to TikTok inbox as a draft (needs TIKTOK_* creds)
+  bun src/cli.ts --random --upload tiktok                          # TikTok via session cookie (needs TIKTOK_SESSION_ID)
+  bun src/cli.ts --random --upload tiktok-api                       # TikTok official API draft (needs TIKTOK_CLIENT_* creds)
   bun src/cli.ts --source snoowrap --random                        # Reddit API (needs creds)
   bun src/cli.ts --source gemini                                   # AI-generated story (needs GEMINI_API_KEY)
 ```
@@ -61,15 +62,17 @@ get by following this [article](https://amandevelops.medium.com/how-to-generate-
 `GOOGLE_ACCESS_TOKEN`  
 `GOOGLE_REFRESH_TOKEN`   
 
-get by installing [extension](https://cookie-editor.com/) and getting cookie from tiktok webiste's sessionid (only for `--tts tiktok` voices)  
+get by installing [extension](https://cookie-editor.com/) and getting the `sessionid` cookie from the tiktok.com website (used by `--tts tiktok` voices **and** `--upload tiktok`)  
 `TIKTOK_SESSION_ID`  
 
-for `--upload tiktok`: register an app at [developers.tiktok.com](https://developers.tiktok.com/), add the **Content Posting API** product with the `video.upload` scope, then run the OAuth flow once to get a refresh token. Set:  
+for `--upload tiktok-api` (official API): register an app at [developers.tiktok.com](https://developers.tiktok.com/), add the **Content Posting API** product with the `video.upload` scope, then run the OAuth flow once to get a refresh token. Set:  
 `TIKTOK_CLIENT_KEY`  
 `TIKTOK_CLIENT_SECRET`  
 `TIKTOK_REFRESH_TOKEN`  
 
-> **Note:** `--upload tiktok` sends the finished video to your TikTok app **inbox as a draft** — you tap *Post* in the app to publish (set caption/privacy there). This works without TikTok app review. Fully automated public posting requires TikTok's app audit + the direct-post endpoint; the inbox flow is the durable, ToS-compliant default. TikTok access tokens are refreshed automatically on each run.
+> **Two TikTok upload modes:**
+> - `--upload tiktok` — drives the TikTok web upload UI with your `TIKTOK_SESSION_ID` cookie via a headless browser. One command, no dev app. **Best-effort and fragile**: TikTok actively fights upload automation (selectors change, headless detection, captchas, the cookie expires) — expect occasional breakage and selector maintenance. Against TikTok's ToS; use on your own account at your own risk.
+> - `--upload tiktok-api` — official Content Posting API. Sends the video to your TikTok app **inbox as a draft** (tap *Post* in-app to publish). Needs a registered dev app but is durable and ToS-compliant. Tokens auto-refresh each run.
 
 ## Usage/Examples
 
@@ -88,7 +91,7 @@ Options:
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
   --maxDuration <seconds>             Hard cap on final short length (default: "59"; YouTube Shorts <= 60s)
   -t --tts <tts>                      Which tts to use: "edge" (no creds — default), "google" or "tiktok"
-  -u --upload <platform>              Upload after render: "youtube" or "tiktok"
+  -u --upload <platform>              Upload after render: "youtube", "tiktok" (session cookie) or "tiktok-api" (official)
   -g --tags <tags...>                 Tags for video title (default: ["shorts","reddit","redditstories"])
   -a --bgAudio <bgAudio>              Background audio (default: "https://www.youtube.com/watch?v=xy_NKN75Jhw")
   -v --bgVideo <bgVideo>              Background video (default: "https://www.youtube.com/watch?v=XBIaqOm0RKQ")
