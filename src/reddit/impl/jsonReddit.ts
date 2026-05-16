@@ -23,7 +23,7 @@ const BASE_URL = "https://www.reddit.com";
 const RATE_LIMIT_WAIT_MS = 60_000;
 
 // Minimal shapes of the parts of Reddit's JSON responses we read.
-interface RawPostData {
+export interface RawPostData {
   title: string;
   selftext: string;
   permalink: string;
@@ -40,7 +40,7 @@ interface RawPostData {
   over_18: boolean;
 }
 
-interface RawCommentData {
+export interface RawCommentData {
   body: string;
   body_html: string;
   author: string;
@@ -57,7 +57,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function mapPost(data: RawPostData): RedditPost {
+export function mapPost(data: RawPostData): RedditPost {
   return {
     title: data.title,
     selftext: data.selftext,
@@ -75,7 +75,7 @@ function mapPost(data: RawPostData): RedditPost {
   };
 }
 
-function mapComment(data: RawCommentData): RedditComment {
+export function mapComment(data: RawCommentData): RedditComment {
   return {
     body: data.body,
     body_html: data.body_html,
