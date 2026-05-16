@@ -77,7 +77,7 @@ Respond ONLY with raw JSON (no markdown, no code fences) matching exactly this s
 Include between 5 and 10 comments. Vary their tone and length. Keep everything family-friendly.`;
 
     const response = await this.ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-lite",
       contents: prompt,
     });
 
