@@ -1,7 +1,7 @@
 import { TextToSpeechClient, protos } from "@google-cloud/text-to-speech";
 import fs from "fs/promises";
 import { TtsInterface } from "../tts";
-import env from "../../config/env";
+import { requireEnv } from "../../config/env";
 
 export class GoogleCloudTts implements TtsInterface {
   private client;
@@ -16,12 +16,11 @@ export class GoogleCloudTts implements TtsInterface {
     this.languageCode = languageCode;
     this.voiceName = voiceName;
     this.gender = gender;
-    if (!env.GOOGLE_CREDENTIALS) {
-      throw new Error(
-        "environment variable GOOGLE_APPLICATION_CREDENTIALS not set, should point to json file with credentials. get it from google cloud console"
-      );
-    }
-    this.client = new TextToSpeechClient({ credentials: JSON.parse(env.GOOGLE_CREDENTIALS) });
+    this.client = new TextToSpeechClient({
+      credentials: JSON.parse(
+        requireEnv("GOOGLE_CREDENTIALS", "--tts google (Google Cloud TTS)")
+      ),
+    });
   }
   async getAudioAsBuffer(text: string) {
     const [response] = await this.client.synthesizeSpeech({

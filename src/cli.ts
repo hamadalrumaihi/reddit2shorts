@@ -8,7 +8,7 @@
 import { Command } from "commander";
 import "dotenv/config";
 import ora from "ora";
-import env from "./config/env";
+import env, { requireEnv } from "./config/env";
 import { subreddits } from "./constants/subreddits";
 import { RedditInterface } from "./reddit/RedditInterface";
 import { RedditCategory, RedditPost, Timespan } from "./reddit/types";
@@ -105,7 +105,10 @@ async function main() {
     let tts: TtsInterface | undefined;
 
     if (options.source === "gemini") {
-      reddit = new GeminiStory(env.GEMINI_API_KEY, options.subreddits);
+      reddit = new GeminiStory(
+        requireEnv("GEMINI_API_KEY", "--source gemini"),
+        options.subreddits
+      );
       post = await reddit.getPost(options.postId ?? "");
     } else {
       if (!options.postId && !options.random) {

@@ -1,8 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
-import env from "../config/env";
+import { requireEnv } from "../config/env";
 
 export async function getShortTitle(reddittTitle: string, subreddit: string) {
-    const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+    const ai = new GoogleGenAI({
+        apiKey: requireEnv("GEMINI_API_KEY", "YouTube title generation"),
+    });
 
     const response = await ai.models.generateContent({
         model: "gemini-2.0-flash",
