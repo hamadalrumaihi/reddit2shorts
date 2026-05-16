@@ -18,11 +18,12 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
 ```bash
   git clone https://github.com/yogeshdofficial/reddit2shorts
   cd reddit2shorts
-  mv .env.example .env # populate it
+  mv .env.example .env # only needed for snoowrap/gemini/google/upload
   bun install
-  bun src/cli.ts --random --upload youtube                       # default: json (Reddit public JSON, no Reddit creds)
-  bun src/cli.ts --source snoowrap --random --upload youtube      # Reddit API (needs creds)
-  bun src/cli.ts --source gemini --upload youtube                 # AI-generated story
+  bun src/cli.ts --random                                         # ZERO credentials: json source + edge tts (defaults)
+  bun src/cli.ts --random --upload youtube                         # add YouTube upload (needs GOOGLE_* creds)
+  bun src/cli.ts --source snoowrap --random                        # Reddit API (needs creds)
+  bun src/cli.ts --source gemini                                   # AI-generated story (needs GEMINI_API_KEY)
 ```
 ## Environment Variables
 
@@ -63,7 +64,7 @@ Options:
   -r, --random                        Make short from a random post (json/snoowrap only)
   -p, --postId <postId>               Make short from the post with id
   -c --commentsCount <commentsCount>  Number of comments to include (default: "10")
-  -t --tts <tts>                      Which tts to use (default: "google")
+  -t --tts <tts>                      Which tts to use: "edge" (no creds — default), "google" or "tiktok"
   -u --upload <platform>              Upload to platform
   -g --tags <tags...>                 Tags for video title (default: ["shorts","reddit","redditstories"])
   -a --bgAudio <bgAudio>              Background audio (default: "https://www.youtube.com/watch?v=xy_NKN75Jhw")

@@ -16,6 +16,7 @@ import { JsonReddit } from "./reddit/impl/jsonReddit";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
 import { GeminiStory } from "./storySource/geminiStory";
+import { EdgeTts } from "./tts/impl/edgeTts";
 import { GoogleCloudTts } from "./tts/impl/googleCloudTts";
 import { TiktokTts } from "./tts/impl/tiktokTts";
 import { TtsInterface } from "./tts/tts";
@@ -46,7 +47,11 @@ program
     "Number of comments to include",
     "10"
   )
-  .option("-t, --tts <tts>", "Which tts to use", "google")
+  .option(
+    "-t, --tts <tts>",
+    "Which tts to use: 'edge' (no creds — default), 'google' or 'tiktok'",
+    "edge"
+  )
   .option("-u, --upload <platform>", "Upload to platform")
   .option("--gTtsVoice <gTtsVoice>", "Voice of google tts", "en-US-Wavenet-F")
   .option("--gTtsLang <gTtsLang>", "Language of google tts", "en-US")
@@ -161,6 +166,9 @@ async function main() {
     const commentsCount = Number.parseInt(options.commentsCount, 10) || 10;
 
     switch (options.tts) {
+      case "edge":
+        tts = new EdgeTts();
+        break;
       case "google":
         tts = new GoogleCloudTts(
           options.gTtsLang,
@@ -172,7 +180,9 @@ async function main() {
         tts = new TiktokTts();
         break;
       default:
-        console.error("Error: Invalid TTS option. Supported: google, tiktok");
+        console.error(
+          "Error: Invalid TTS option. Supported: edge, google, tiktok"
+        );
         process.exit(1);
     }
 
