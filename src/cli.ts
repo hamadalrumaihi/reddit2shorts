@@ -35,6 +35,9 @@ import { doctorPassed, formatDoctor, runDoctor } from "./utils/doctor";
 import { logEvent, setJsonLogging } from "./utils/logger";
 import { getShortTitle } from "./utils/getShortTitle";
 import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
+import { generateVideoMetadata } from "./metadata";
+import { detectTrendingTopics } from "./metadata/trending";
+import type { VoiceStyle } from "./shortsCreation/utils/replaceAbbrevations";
 
 const program = new Command();
 
@@ -125,7 +128,28 @@ program
   ])
   .option("-v, --bgVideo <bgVideo...>", "Background video", [
     "https://www.youtube.com/watch?v=XBIaqOm0RKQ",
-  ]);
+  ])
+  .option(
+    "--voice-style <style>",
+    "TTS reading style: 'normal', 'genz' (reads like a zoomer), or 'brainrot' (maximum chaos energy)",
+    "normal"
+  )
+  .option(
+    "--duration-preset <preset>",
+    "Quick duration presets: '15s' (ultra-short), '30s' (short), '45s' (medium), '60s' (full)",
+  )
+  .option("--trending", "Auto-pick the most viral trending post from your subreddits")
+  .option("--generate-metadata", "Generate optimized titles/descriptions/hashtags after rendering")
+  .option(
+    "--metadata-style <style>",
+    "Metadata style: 'viral', 'storytelling', 'controversial', 'wholesome', 'brainrot'",
+    "viral"
+  )
+  .option(
+    "--platform <platform>",
+    "Target platform for metadata: 'tiktok', 'youtube_shorts', 'reels', 'all'",
+    "all"
+  );
 
 interface CliOptions {
   preset?: string;
@@ -159,6 +183,12 @@ interface CliOptions {
   cookies?: string;
   doctor?: boolean;
   dryRun?: boolean;
+  voiceStyle: VoiceStyle;
+  durationPreset?: string;
+  trending?: boolean;
+  generateMetadata?: boolean;
+  metadataStyle: string;
+  platform: string;
 }
 
 program.parse(process.argv);
@@ -195,6 +225,27 @@ async function main() {
     let reddit: RedditInterface;
     let post: RedditPost | null | undefined;
     let tts: TtsInterface | undefined;
+
+    // Trending mode: find the most viral post automatically
+    if (options.trending && !options.postId) {
+      const trendingSpinner = ora("Detecting trending topics").start();
+      const trending = await detectTrendingTopics(options.subreddits, 5);
+      if (trending.length > 0) {
+        trendingSpinner.succeed(
+          `Found trending: "${trending[0].title}" (velocity: ${trending[0].velocityScore.toFixed(0)})`
+        );
+        // Extract post ID from permalink
+        const parts = trending[0].permalink.split("/").filter(Boolean);
+        const commentsIdx = parts.indexOf("comments");
+        if (commentsIdx >= 0 && parts[commentsIdx + 1]) {
+          options.postId = parts[commentsIdx + 1];
+          options.random = false;
+        }
+      } else {
+        trendingSpinner.warn("No trending posts found, falling back to --random");
+        options.random = true;
+      }
+    }
 
     if (options.source === "gemini") {
       reddit = new GeminiStory(
@@ -279,7 +330,24 @@ async function main() {
 
     // normalize comments count to number
     const commentsCount = Number.parseInt(options.commentsCount, 10) || 10;
-    const maxDuration = Number.parseInt(options.maxDuration, 10) || 59;
+
+    // Duration presets: quick shorthand for common lengths
+    let maxDuration = Number.parseInt(options.maxDuration, 10) || 59;
+    if (options.durationPreset) {
+      const durationMap: Record<string, number> = {
+        "15s": 15,
+        "30s": 30,
+        "45s": 45,
+        "60s": 59,
+      };
+      const preset = durationMap[options.durationPreset];
+      if (preset) {
+        maxDuration = preset;
+        console.log(`⏱️ Duration preset: ${options.durationPreset} (max ${maxDuration}s)`);
+      } else {
+        console.warn(`⚠️ Unknown duration preset "${options.durationPreset}", using ${maxDuration}s`);
+      }
+    }
 
     switch (options.tts) {
       case "edge":
@@ -323,9 +391,25 @@ async function main() {
       tts,
       commentsCount,
       maxDuration,
+      voiceStyle: (options.voiceStyle as VoiceStyle) || "normal",
     });
 
     logEvent("render_complete", { output });
+
+    // Generate social media metadata if requested
+    if (options.generateMetadata) {
+      const metadata = generateVideoMetadata(post, {
+        platform: options.platform as "tiktok" | "youtube_shorts" | "reels" | "all",
+        style: options.metadataStyle as "viral" | "storytelling" | "controversial" | "wholesome" | "brainrot",
+        includeCallToAction: true,
+      });
+      console.log("\n📱 Generated Social Media Metadata:");
+      console.log(`   🎬 Title: ${metadata.title}`);
+      console.log(`   🪝 Hook: ${metadata.hook}`);
+      console.log(`   #️⃣ Hashtags: ${metadata.hashtags.map(h => `#${h}`).join(" ")}`);
+      console.log(`   📝 Description:\n${metadata.description.split("\n").map(l => `      ${l}`).join("\n")}`);
+      logEvent("metadata_generated", metadata);
+    }
 
     // Record the post so an automated/repeated run won't re-use it.
     // (Gemini stories are fictional one-offs — nothing to dedupe.)

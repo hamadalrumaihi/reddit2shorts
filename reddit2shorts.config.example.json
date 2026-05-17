@@ -10,5 +10,21 @@
   "minComments": "50",
   "maxAgeDays": "7",
   "minBodyChars": "0",
-  "maxBodyChars": "0"
+  "maxBodyChars": "0",
+
+  "_comment_voice": "Voice styles: 'normal' (standard TTS), 'genz' (reads like a zoomer), 'brainrot' (maximum chaos energy with fillers)",
+  "voiceStyle": "normal",
+
+  "_comment_duration": "Duration presets: '15s', '30s', '45s', '60s' — overrides maxDuration for quick setup",
+  "durationPreset": null,
+
+  "_comment_metadata": "Auto-generate platform-optimized titles/descriptions/hashtags after render",
+  "generateMetadata": false,
+  "metadataStyle": "viral",
+  "platform": "all",
+
+  "_comment_trending": "Auto-detect the most viral trending post from your subreddits",
+  "trending": false,
+
+  "_comment_presets": "Available --preset values: askreddit-story | tifu-narrative | aita-judgment | shower-thought | brainrot | genz-viral | ultra-short | tiktok-viral | reels-storytelling | controversial-bait"
 }

@@ -4,3 +4,10 @@ dist
 shorts
 bun.lock
 .seen-posts.json
+.claude/
+cookies.txt
+ffmpeg.zip
+data/
+config.json
+*.mp4
+*.mp3

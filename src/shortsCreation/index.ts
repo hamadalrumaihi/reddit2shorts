@@ -13,7 +13,8 @@ import numbro from "numbro";
 import path from "path";
 import { createVideoFromImageAndAudio } from "./utils/ffmpeg";
 import { screenshotComment, screenshotPost } from "./utils/redditScreenshot";
-import { replaceRedditAbbreviations } from "./utils/replaceAbbrevations";
+import { replaceRedditAbbreviations, VoiceStyle } from "./utils/replaceAbbrevations";
+import { stripEmojis } from "../utils/emoji";
 import ora from "ora";
 
 /**
@@ -39,12 +40,14 @@ export async function createShortFromPost({
   tts,
   commentsCount,
   maxDuration = 59,
+  voiceStyle = "normal",
 }: {
   post: RedditPost;
   reddit: RedditInterface;
   tts: TtsInterface;
   commentsCount: number;
   maxDuration?: number;
+  voiceStyle?: VoiceStyle;
 }) {
   const comments = await reddit.getTopComments(post, commentsCount, true, true);
 
@@ -74,11 +77,12 @@ export async function createShortFromPost({
     reddit,
     audioFolderPath,
     imgFolderPath,
+    voiceStyle,
   });
   spinner2.succeed("Created title audio and screenshots");
 
   const spinner3 = ora("Creating comments audio").start();
-  await createCommentsAudio({ comments, audioFolderPath, tts });
+  await createCommentsAudio({ comments, audioFolderPath, tts, voiceStyle });
   spinner3.succeed("Created comment audios");
 
   const spinner4 = ora("Creating comments screenshots").start();
@@ -148,18 +152,23 @@ async function createTitleAudioAndScreenshot({
   reddit,
   audioFolderPath,
   imgFolderPath,
+  voiceStyle = "normal",
 }: {
   post: RedditPost;
   tts: TtsInterface;
   reddit: RedditInterface;
   audioFolderPath: string;
   imgFolderPath: string;
+  voiceStyle?: VoiceStyle;
 }) {
-  const postAudio = await tts.getAudioAsBuffer(post.title);
+  // For TTS: expand abbreviations + handle emojis based on voice style
+  const ttsTitle = replaceRedditAbbreviations(post.title, voiceStyle, voiceStyle === "brainrot");
+  const postAudio = await tts.getAudioAsBuffer(ttsTitle);
   await tts.saveAudioBufferToFile(postAudio, `${audioFolderPath}/0.mp3`);
+  // For screenshot: keep original text but strip emojis for clean render
   await screenshotPost(
     post.subreddit.display_name,
-    replaceRedditAbbreviations(post.title.trim()),
+    stripEmojis(post.title.trim()),
     post.author.name,
     formatDistanceToNow(fromUnixTime(post.created_utc), {
       addSuffix: true,
@@ -174,21 +183,26 @@ async function createCommentsAudio({
   comments,
   audioFolderPath,
   tts,
+  voiceStyle = "normal",
 }: {
   comments: RedditComment[];
   audioFolderPath: string;
   tts: TtsInterface;
+  voiceStyle?: VoiceStyle;
 }) {
   for (const [index, comment] of comments.entries()) {
     const $ = cheerio.load(comment.body_html);
     const text = $("body")
       .text()
       .replace(/\s+/g, " ")
-      .replace("NTA", "not the asshole")
       .trim();
-    const commentAudio = await tts.getAudioAsBuffer(
-      replaceRedditAbbreviations(text)
+    // Apply voice style + emoji handling for TTS
+    const processedText = replaceRedditAbbreviations(
+      text,
+      voiceStyle,
+      voiceStyle === "brainrot"
     );
+    const commentAudio = await tts.getAudioAsBuffer(processedText);
     await tts.saveAudioBufferToFile(
       commentAudio,
       `${audioFolderPath}/${index + 1}.mp3`
