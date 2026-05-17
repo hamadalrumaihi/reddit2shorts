@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="R2S">
+<meta name="theme-color" content="#00FFAA">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>R2S</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --accent: #00FFAA;
+  --accent-dim: #00cc88;
+  --text: #e0e0e0;
+  --text-muted: #888;
+  --danger: #ff4757;
+  --radius: 16px;
+  --safe-top: env(safe-area-inset-top, 20px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body {
+  padding: var(--safe-top) 16px var(--safe-bottom);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.header {
+  text-align: center;
+  padding: 12px 0 8px;
+}
+.header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), #00ccff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+.header .subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.status-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 0;
+  border: 1px solid rgba(0,255,170,0.1);
+}
+.status-card .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.status-dot.running {
+  background: var(--accent);
+  animation: pulse 1.5s infinite;
+}
+.status-dot.idle { background: var(--text-muted); }
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+.status-label { font-size: 14px; font-weight: 600; }
+.status-detail {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.status-detail .step { color: var(--accent); font-weight: 500; }
+.btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+  flex: 1;
+}
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.btn:active { transform: scale(0.95); background: rgba(0,255,170,0.1); }
+.btn .emoji { font-size: 32px; }
+.btn.btn-stop {
+  background: rgba(255,71,87,0.15);
+  border-color: rgba(255,71,87,0.3);
+  color: var(--danger);
+  grid-column: 1 / -1;
+}
+.btn.btn-stop:active { background: rgba(255,71,87,0.3); }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+.history-section {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.history-section h3 {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.history-item {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.history-item .title { font-weight: 500; color: var(--text); }
+.history-item .meta { color: var(--text-muted); margin-top: 3px; }
+.toast {
+  position: fixed;
+  bottom: calc(var(--safe-bottom) + 20px);
+  left: 50%; transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>R2S</h1>
+  <div class="subtitle">Reddit → Shorts Control Panel</div>
+</div>
+
+<div class="status-card" id="statusCard">
+  <div class="status-indicator">
+    <div class="status-dot idle" id="statusDot"></div>
+    <span class="status-label" id="statusLabel">Idle</span>
+  </div>
+  <div class="status-detail" id="statusDetail">Ready to create shorts</div>
+</div>
+
+<div class="btn-grid">
+  <button class="btn" onclick="run('quick')">
+    <span class="emoji">⚡</span>
+    Quick Post
+  </button>
+  <button class="btn" onclick="run('brainrot')">
+    <span class="emoji">🧠</span>
+    Brainrot
+  </button>
+  <button class="btn" onclick="run('horror')">
+    <span class="emoji">👻</span>
+    Horror
+  </button>
+  <button class="btn" onclick="run('all')">
+    <span class="emoji">🌐</span>
+    All Platforms
+  </button>
+  <button class="btn btn-stop" id="stopBtn" onclick="stopJob()" disabled>
+    <span class="emoji">⏹️</span>
+    Stop
+  </button>
+</div>
+
+<div class="history-section">
+  <h3>Recent Runs</h3>
+  <div id="historyList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let polling = null;
+let isRunning = false;
+
+const presets = {
+  quick:    { upload: 'tiktok' },
+  brainrot: { upload: 'tiktok', account: 'brainrot' },
+  horror:   { upload: 'tiktok', account: 'horror' },
+  all:      { upload: 'all' }
+};
+
+async function run(preset) {
+  const params = presets[preset] || {};
+  try {
+    const res = await fetch('/api/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    const data = await res.json();
+    if (data.ok) {
+      toast('Job started!');
+      startPolling();
+    } else {
+      toast(data.error || 'Failed to start');
+    }
+  } catch (e) {
+    toast('Connection error');
+  }
+}
+
+async function stopJob() {
+  try {
+    const res = await fetch('/api/stop', { method: 'POST' });
+    const data = await res.json();
+    toast(data.ok ? 'Stopping...' : 'Nothing to stop');
+  } catch (e) {
+    toast('Connection error');
+  }
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    updateStatus(data);
+    localStorage.setItem('r2s_last_status', JSON.stringify(data));
+    return data;
+  } catch (e) {
+    const cached = localStorage.getItem('r2s_last_status');
+    if (cached) updateStatus(JSON.parse(cached));
+    return null;
+  }
+}
+
+function updateStatus(data) {
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  const detail = document.getElementById('statusDetail');
+  const stopBtn = document.getElementById('stopBtn');
+
+  if (data.running) {
+    dot.className = 'status-dot running';
+    label.textContent = 'Running';
+    let info = '';
+    if (data.step) info += `<span class="step">${data.step}</span>`;
+    if (data.postTitle) info += `<br>${data.postTitle}`;
+    if (data.elapsed) info += `<br>${Math.round(data.elapsed/1000)}s elapsed`;
+    detail.innerHTML = info || 'Processing...';
+    stopBtn.disabled = false;
+    isRunning = true;
+    startPolling();
+  } else {
+    dot.className = 'status-dot idle';
+    label.textContent = 'Idle';
+    if (data.lastRun) {
+      detail.innerHTML = `Last: ${data.lastRun.postTitle || 'Unknown'}<br>${formatTime(data.lastRun.duration)}`;
+    } else {
+      detail.textContent = 'Ready to create shorts';
+    }
+    stopBtn.disabled = true;
+    isRunning = false;
+    stopPolling();
+  }
+}
+
+function startPolling() {
+  if (polling) return;
+  polling = setInterval(checkStatus, 2000);
+}
+function stopPolling() {
+  if (polling) { clearInterval(polling); polling = null; }
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history');
+    const runs = await res.json();
+    const list = document.getElementById('historyList');
+    if (!runs.length) { list.innerHTML = '<div class="history-item"><span class="meta">No runs yet</span></div>'; return; }
+    list.innerHTML = runs.slice(0, 5).map(r => `
+      <div class="history-item">
+        <div class="title">${r.postTitle || 'Unknown post'}</div>
+        <div class="meta">${r.subreddit || ''} · ${formatTime(r.timing?.total)} · ${formatDate(r.timestamp)}</div>
+      </div>
+    `).join('');
+  } catch (e) {}
+}
+
+function formatTime(ms) {
+  if (!ms) return '?';
+  const s = Math.round(ms / 1000);
+  return s > 60 ? `${Math.floor(s/60)}m ${s%60}s` : `${s}s`;
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString([], {month:'short',day:'numeric'});
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Init
+checkStatus();
+loadHistory();
+</script>
+</body>
+</html>
