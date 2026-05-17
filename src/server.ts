@@ -208,8 +208,15 @@ serve({
       return Response.json({ ok: true, message: "Job stopped" });
     }
 
-    // GET / — simple health check with instructions
-    if (path === "/" || path === "") {
+    // GET /remote — serve the mobile control panel HTML
+    if (path === "/remote" || path === "/remote/" || path === "/" || path === "") {
+      const htmlPath = join(process.cwd(), "shortcuts", "remote.html");
+      if (existsSync(htmlPath)) {
+        const html = readFileSync(htmlPath, "utf-8");
+        return new Response(html, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
       return Response.json({
         service: "reddit2shorts",
         version: "1.0.0",
@@ -220,6 +227,7 @@ serve({
           "/status": "Check current/recent job status",
           "/accounts": "List configured accounts",
           "/stop": "Stop current job",
+          "/remote": "Mobile control panel",
         },
       });
     }
