@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reddit2Shorts Remote</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="R2S">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  padding: 20px;
+  padding-top: env(safe-area-inset-top, 20px);
+}
+h1 { font-size: 24px; text-align: center; margin: 20px 0 10px; }
+.subtitle { text-align: center; color: #888; font-size: 14px; margin-bottom: 30px; }
+.status-bar {
+  background: #111;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #222;
+}
+.status-bar .label { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.status-bar .value { font-size: 18px; margin-top: 4px; }
+.status-bar .value.running { color: #ffa500; }
+.status-bar .value.idle { color: #4cd964; }
+.buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.btn {
+  background: #1c1c1e;
+  border: 1px solid #333;
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.95); background: #2c2c2e; }
+.btn .icon { font-size: 32px; margin-bottom: 8px; }
+.btn .label { font-size: 14px; font-weight: 600; }
+.btn .sublabel { font-size: 11px; color: #888; margin-top: 4px; }
+.btn.primary { background: #ff4500; border-color: #ff4500; }
+.btn.primary:active { background: #cc3700; }
+.btn.wide { grid-column: span 2; }
+.log {
+  background: #111;
+  border-radius: 12px;
+  padding: 16px;
+  font-family: 'SF Mono', monospace;
+  font-size: 12px;
+  color: #aaa;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #222;
+  margin-top: 20px;
+}
+.log-entry { padding: 4px 0; border-bottom: 1px solid #1a1a1a; }
+.log-entry.success { color: #4cd964; }
+.log-entry.error { color: #ff3b30; }
+.toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: #333; color: #fff; padding: 12px 24px; border-radius: 20px;
+  font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  z-index: 100;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<h1>🎬 Reddit2Shorts</h1>
+<p class="subtitle">Remote Control</p>
+
+<div class="status-bar" id="statusBar">
+  <div class="label">Status</div>
+  <div class="value idle" id="statusText">Checking...</div>
+</div>
+
+<div class="buttons">
+  <div class="btn primary" onclick="run('')">
+    <div class="icon">⚡</div>
+    <div class="label">Quick Post</div>
+    <div class="sublabel">Random + TikTok</div>
+  </div>
+  <div class="btn" onclick="run('account=brainrot')">
+    <div class="icon">🧠</div>
+    <div class="label">Brainrot</div>
+    <div class="sublabel">Max chaos</div>
+  </div>
+  <div class="btn" onclick="run('account=horror')">
+    <div class="icon">👻</div>
+    <div class="label">Horror</div>
+    <div class="sublabel">Scary stories</div>
+  </div>
+  <div class="btn" onclick="run('upload=all')">
+    <div class="icon">🌐</div>
+    <div class="label">All Platforms</div>
+    <div class="sublabel">TikTok + YouTube</div>
+  </div>
+  <div class="btn wide" onclick="stopJob()">
+    <div class="icon">⏹️</div>
+    <div class="label">Stop Current Job</div>
+  </div>
+</div>
+
+<div class="log" id="logBox">
+  <div class="log-entry">Tap a button to generate a video...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = "https://map-reroute-freefall.ngrok-free.dev";
+const logBox = document.getElementById('logBox');
+const statusText = document.getElementById('statusText');
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function addLog(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'log-entry ' + type;
+  el.textContent = `${new Date().toLocaleTimeString()} - ${msg}`;
+  logBox.prepend(el);
+}
+
+async function run(params) {
+  try {
+    toast('Starting...');
+    addLog('Triggering video generation...');
+    const url = `${BASE}/run?upload=tiktok${params ? '&' + params : ''}`;
+    const res = await fetch(url, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      addLog(`✓ Job started: ${data.jobId}`, 'success');
+      toast('🎬 Video generating!');
+      statusText.textContent = 'Running...';
+      statusText.className = 'value running';
+      // Poll status
+      setTimeout(checkStatus, 5000);
+    } else {
+      addLog(`⚠ ${data.message || data.error}`, 'error');
+      toast(data.message || 'Busy');
+    }
+  } catch (e) {
+    addLog(`�� Connection failed: ${e.message}`, 'error');
+    toast('❌ Cannot reach server');
+  }
+}
+
+async function stopJob() {
+  try {
+    const res = await fetch(`${BASE}/stop`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    const data = await res.json();
+    addLog(data.message, 'success');
+    toast('Stopped');
+    statusText.textContent = 'Idle';
+    statusText.className = 'value idle';
+  } catch (e) {
+    addLog(`Stop failed: ${e.message}`, 'error');
+  }
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch(`${BASE}/status`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
+    const data = await res.json();
+    if (data.currentJob) {
+      statusText.textContent = `Running (${data.currentJob.account || 'main'})`;
+      statusText.className = 'value running';
+      setTimeout(checkStatus, 8000);
+    } else {
+      statusText.textContent = 'Idle - Ready';
+      statusText.className = 'value idle';
+      if (data.recentJobs && data.recentJobs[0]) {
+        const last = data.recentJobs[0];
+        addLog(`Last job: ${last.status} (${last.account || 'main'})`, last.status === 'done' ? 'success' : 'error');
+      }
+    }
+  } catch {
+    statusText.textContent = 'Offline';
+    statusText.className = 'value error';
+  }
+}
+
+// Initial status check
+checkStatus();
+// Refresh every 30s
+setInterval(checkStatus, 30000);
+</script>
+</body>
+</html>
