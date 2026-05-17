@@ -1,149 +1,268 @@
 ﻿{
-  "version": "1.0.0",
-  "subredditPools": {
-    "storytelling": {
-      "subreddits": ["askreddit", "tifu", "maliciouscompliance", "prorevenge", "nosleep"],
-      "weights": [0.3, 0.2, 0.2, 0.15, 0.15]
-    },
-    "drama": {
-      "subreddits": ["aita", "relationships", "relationship_advice", "entitledparents"],
-      "weights": [0.35, 0.25, 0.2, 0.2]
-    },
-    "humor": {
-      "subreddits": ["tifu", "askreddit", "maliciouscompliance", "pettyrevenge", "talesfromretail"],
-      "weights": [0.25, 0.25, 0.2, 0.15, 0.15]
-    },
-    "scary": {
-      "subreddits": ["nosleep", "letsnotmeet", "creepyencounters", "glitch_in_the_matrix"],
-      "weights": [0.4, 0.25, 0.2, 0.15]
-    }
-  },
-  "contentStyles": {
-    "askreddit-story": {
-      "minLength": 200,
-      "maxLength": 1500,
-      "preferTopComments": true,
-      "maxComments": 5,
-      "tone": "conversational",
-      "pacing": "medium"
-    },
-    "tifu-narrative": {
-      "minLength": 300,
-      "maxLength": 2000,
-      "includeTitle": true,
-      "tone": "humorous",
-      "pacing": "fast",
-      "emphasisOnClimx": true
-    },
-    "aita-judgment": {
-      "minLength": 250,
-      "maxLength": 1800,
-      "includeJudgment": true,
-      "showVoteCounts": true,
-      "tone": "dramatic",
-      "pacing": "buildup"
-    },
-    "nosleep-horror": {
-      "minLength": 400,
-      "maxLength": 2500,
-      "tone": "suspenseful",
-      "pacing": "slow-build",
-      "ambientSound": true
-    }
-  },
-  "platformSettings": {
-    "tiktok": {
-      "aspectRatio": "9:16",
-      "maxDuration": 60,
-      "resolution": { "width": 1080, "height": 1920 },
-      "captionStyle": "bold-center",
-      "captionFont": "Montserrat-Bold",
-      "captionSize": 48,
-      "captionColor": "#FFFFFF",
-      "captionStroke": "#000000",
-      "captionStrokeWidth": 2,
-      "captionPosition": "center",
-      "backgroundVideo": "minecraft-parkour"
-    },
-    "youtube-shorts": {
-      "aspectRatio": "9:16",
-      "maxDuration": 60,
-      "resolution": { "width": 1080, "height": 1920 },
-      "captionStyle": "subtitle-bottom",
-      "captionFont": "Arial-Bold",
-      "captionSize": 42,
-      "captionColor": "#FFFFFF",
-      "captionStroke": "#000000",
-      "captionStrokeWidth": 1.5,
-      "captionPosition": "bottom-third",
-      "backgroundVideo": "subway-surfers"
-    },
-    "instagram-reels": {
-      "aspectRatio": "9:16",
-      "maxDuration": 90,
-      "resolution": { "width": 1080, "height": 1920 },
-      "captionStyle": "minimal-clean",
-      "captionFont": "Helvetica-Neue",
-      "captionSize": 38,
-      "captionColor": "#FFFFFF",
-      "captionStroke": "none",
-      "captionShadow": true,
-      "captionPosition": "center",
-      "backgroundVideo": "satisfying-clips"
-    }
-  },
-  "ttsSettings": {
-    "defaultProvider": "elevenlabs",
-    "providers": {
-      "elevenlabs": {
-        "voiceId": "21m00Tcm4TlvDq8ikWAM",
-        "voiceName": "Rachel",
-        "stability": 0.5,
-        "similarityBoost": 0.75,
-        "style": 0.3,
-        "speakerBoost": true
-      },
-      "openai": {
-        "voice": "nova",
-        "model": "tts-1-hd",
-        "speed": 1.1
-      },
-      "google": {
-        "languageCode": "en-US",
-        "voiceName": "en-US-Neural2-F",
-        "speakingRate": 1.15,
-        "pitch": 0
-      }
-    },
-    "stripEmojis": true,
-    "maxCharsPerSegment": 500,
-    "pauseBetweenSegments": 0.3
-  },
-  "hashtagPools": {
-    "general": ["#reddit", "#redditstories", "#viral", "#fyp", "#storytime"],
-    "funny": ["#funny", "#comedy", "#humor", "#lol", "#memes", "#hilarious"],
-    "drama": ["#drama", "#tea", "#toxic", "#exposed", "#shocking"],
-    "scary": ["#scary", "#horror", "#creepy", "#paranormal", "#nosleep"],
-    "revenge": ["#revenge", "#karma", "#justice", "#satisfying", "#pettyrevenge"],
-    "relationship": ["#relationship", "#love", "#dating", "#toxicrelationship", "#breakup"],
-    "motivation": ["#motivation", "#inspiration", "#life", "#wisdom", "#mindset"]
-  },
-  "scheduling": {
-    "postsPerDay": 3,
-    "optimalTimes": {
-      "tiktok": ["07:00", "12:00", "19:00"],
-      "youtube": ["09:00", "14:00", "20:00"],
-      "instagram": ["08:00", "13:00", "18:00"]
-    },
-    "timezone": "America/New_York"
-  },
-  "filters": {
-    "minScore": 500,
-    "minComments": 50,
-    "maxAge": "48h",
-    "excludeNSFW": true,
-    "excludeFlairs": ["Removed", "Locked", "Meta"],
-    "minWordCount": 100,
-    "maxWordCount": 3000
-  }
+    "version":  "1.0.0",
+    "subredditPools":  {
+                           "storytelling":  {
+                                                "subreddits":  [
+                                                                   "askreddit",
+                                                                   "tifu",
+                                                                   "maliciouscompliance",
+                                                                   "prorevenge",
+                                                                   "nosleep"
+                                                               ],
+                                                "weights":  [
+                                                                0.3,
+                                                                0.2,
+                                                                0.2,
+                                                                0.15,
+                                                                0.15
+                                                            ]
+                                            },
+                           "drama":  {
+                                         "subreddits":  [
+                                                            "aita",
+                                                            "relationships",
+                                                            "relationship_advice",
+                                                            "entitledparents"
+                                                        ],
+                                         "weights":  [
+                                                         0.35,
+                                                         0.25,
+                                                         0.2,
+                                                         0.2
+                                                     ]
+                                     },
+                           "humor":  {
+                                         "subreddits":  [
+                                                            "tifu",
+                                                            "askreddit",
+                                                            "maliciouscompliance",
+                                                            "pettyrevenge",
+                                                            "talesfromretail"
+                                                        ],
+                                         "weights":  [
+                                                         0.25,
+                                                         0.25,
+                                                         0.2,
+                                                         0.15,
+                                                         0.15
+                                                     ]
+                                     },
+                           "scary":  {
+                                         "subreddits":  [
+                                                            "nosleep",
+                                                            "letsnotmeet",
+                                                            "creepyencounters",
+                                                            "glitch_in_the_matrix"
+                                                        ],
+                                         "weights":  [
+                                                         0.4,
+                                                         0.25,
+                                                         0.2,
+                                                         0.15
+                                                     ]
+                                     }
+                       },
+    "contentStyles":  {
+                          "askreddit-story":  {
+                                                  "minLength":  200,
+                                                  "maxLength":  1500,
+                                                  "preferTopComments":  true,
+                                                  "maxComments":  5,
+                                                  "tone":  "conversational",
+                                                  "pacing":  "medium"
+                                              },
+                          "tifu-narrative":  {
+                                                 "minLength":  300,
+                                                 "maxLength":  2000,
+                                                 "includeTitle":  true,
+                                                 "tone":  "humorous",
+                                                 "pacing":  "fast",
+                                                 "emphasisOnClimx":  true
+                                             },
+                          "aita-judgment":  {
+                                                "minLength":  250,
+                                                "maxLength":  1800,
+                                                "includeJudgment":  true,
+                                                "showVoteCounts":  true,
+                                                "tone":  "dramatic",
+                                                "pacing":  "buildup"
+                                            },
+                          "nosleep-horror":  {
+                                                 "minLength":  400,
+                                                 "maxLength":  2500,
+                                                 "tone":  "suspenseful",
+                                                 "pacing":  "slow-build",
+                                                 "ambientSound":  true
+                                             }
+                      },
+    "platformSettings":  {
+                             "tiktok":  {
+                                            "aspectRatio":  "9:16",
+                                            "maxDuration":  60,
+                                            "resolution":  {
+                                                               "width":  1080,
+                                                               "height":  1920
+                                                           },
+                                            "captionStyle":  "bold-center",
+                                            "captionFont":  "Montserrat-Bold",
+                                            "captionSize":  48,
+                                            "captionColor":  "#FFFFFF",
+                                            "captionStroke":  "#000000",
+                                            "captionStrokeWidth":  2,
+                                            "captionPosition":  "center",
+                                            "backgroundVideo":  "minecraft-parkour"
+                                        },
+                             "youtube-shorts":  {
+                                                    "aspectRatio":  "9:16",
+                                                    "maxDuration":  60,
+                                                    "resolution":  {
+                                                                       "width":  1080,
+                                                                       "height":  1920
+                                                                   },
+                                                    "captionStyle":  "subtitle-bottom",
+                                                    "captionFont":  "Arial-Bold",
+                                                    "captionSize":  42,
+                                                    "captionColor":  "#FFFFFF",
+                                                    "captionStroke":  "#000000",
+                                                    "captionStrokeWidth":  1.5,
+                                                    "captionPosition":  "bottom-third",
+                                                    "backgroundVideo":  "subway-surfers"
+                                                },
+                             "instagram-reels":  {
+                                                     "aspectRatio":  "9:16",
+                                                     "maxDuration":  90,
+                                                     "resolution":  {
+                                                                        "width":  1080,
+                                                                        "height":  1920
+                                                                    },
+                                                     "captionStyle":  "minimal-clean",
+                                                     "captionFont":  "Helvetica-Neue",
+                                                     "captionSize":  38,
+                                                     "captionColor":  "#FFFFFF",
+                                                     "captionStroke":  "none",
+                                                     "captionShadow":  true,
+                                                     "captionPosition":  "center",
+                                                     "backgroundVideo":  "satisfying-clips"
+                                                 }
+                         },
+    "ttsSettings":  {
+                        "defaultProvider":  "elevenlabs",
+                        "providers":  {
+                                          "elevenlabs":  {
+                                                             "voiceId":  "21m00Tcm4TlvDq8ikWAM",
+                                                             "voiceName":  "Rachel",
+                                                             "stability":  0.5,
+                                                             "similarityBoost":  0.75,
+                                                             "style":  0.3,
+                                                             "speakerBoost":  true
+                                                         },
+                                          "openai":  {
+                                                         "voice":  "nova",
+                                                         "model":  "tts-1-hd",
+                                                         "speed":  1.1
+                                                     },
+                                          "google":  {
+                                                         "languageCode":  "en-US",
+                                                         "voiceName":  "en-US-Neural2-F",
+                                                         "speakingRate":  1.15,
+                                                         "pitch":  0
+                                                     }
+                                      },
+                        "stripEmojis":  true,
+                        "maxCharsPerSegment":  500,
+                        "pauseBetweenSegments":  0.3
+                    },
+    "hashtagPools":  {
+                         "general":  [
+                                         "#reddit",
+                                         "#redditstories",
+                                         "#viral",
+                                         "#fyp",
+                                         "#storytime"
+                                     ],
+                         "funny":  [
+                                       "#funny",
+                                       "#comedy",
+                                       "#humor",
+                                       "#lol",
+                                       "#memes",
+                                       "#hilarious"
+                                   ],
+                         "drama":  [
+                                       "#drama",
+                                       "#tea",
+                                       "#toxic",
+                                       "#exposed",
+                                       "#shocking"
+                                   ],
+                         "scary":  [
+                                       "#scary",
+                                       "#horror",
+                                       "#creepy",
+                                       "#paranormal",
+                                       "#nosleep"
+                                   ],
+                         "revenge":  [
+                                         "#revenge",
+                                         "#karma",
+                                         "#justice",
+                                         "#satisfying",
+                                         "#pettyrevenge"
+                                     ],
+                         "relationship":  [
+                                              "#relationship",
+                                              "#love",
+                                              "#dating",
+                                              "#toxicrelationship",
+                                              "#breakup"
+                                          ],
+                         "motivation":  [
+                                            "#motivation",
+                                            "#inspiration",
+                                            "#life",
+                                            "#wisdom",
+                                            "#mindset"
+                                        ]
+                     },
+    "scheduling":  {
+                       "postsPerDay":  3,
+                       "optimalTimes":  {
+                                            "tiktok":  [
+                                                           "07:00",
+                                                           "12:00",
+                                                           "19:00"
+                                                       ],
+                                            "youtube":  [
+                                                            "09:00",
+                                                            "14:00",
+                                                            "20:00"
+                                                        ],
+                                            "instagram":  [
+                                                              "08:00",
+                                                              "13:00",
+                                                              "18:00"
+                                                          ]
+                                        },
+                       "timezone":  "America/New_York"
+                   },
+    "filters":  {
+                    "minScore":  500,
+                    "minComments":  50,
+                    "maxAge":  "48h",
+                    "excludeNSFW":  true,
+                    "excludeFlairs":  [
+                                          "Removed",
+                                          "Locked",
+                                          "Meta"
+                                      ],
+                    "minWordCount":  100,
+                    "maxWordCount":  3000
+                },
+    "options":  {
+                    "minComments":  "50",
+                    "maxDuration":  "59",
+                    "minScore":  "500",
+                    "generateMetadata":  true,
+                    "metadataStyle":  "viral"
+                }
 }

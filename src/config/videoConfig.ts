@@ -1,4 +1,4 @@
-export type AspectRatio = "9:16" | "1:1" | "16:9";
+﻿export type AspectRatio = "9:16" | "1:1" | "16:9";
 export type Resolution = "720p" | "1080p" | "1440p";
 
 export interface VideoConfig {
@@ -32,20 +32,26 @@ export interface CaptionStyle {
   position: "top" | "middle" | "bottom";
   bgOpacity: number;
   highlightColor: string; // for karaoke word highlighting
+  glowEnabled: boolean;
+  glowColor: string;
+  glowSpread: number; // ASS blur strength
 }
 
 export type AnimationType = "none" | "fade" | "slide" | "zoom" | "typewriter";
 export type BgEffect = "none" | "blur" | "zoom" | "grayscale" | "warm" | "cool";
 
 export const DEFAULT_CAPTION_STYLE: CaptionStyle = {
-  fontFamily: "Arial",
-  fontSize: 48,
+  fontFamily: "Montserrat Bold",
+  fontSize: 58,
   fontColor: "#FFFFFF",
-  strokeWidth: 3,
+  strokeWidth: 4,
   strokeColor: "#000000",
   position: "bottom",
-  bgOpacity: 0.6,
-  highlightColor: "#FFDD00",
+  bgOpacity: 0.0,
+  highlightColor: "#00FFAA",
+  glowEnabled: true,
+  glowColor: "#00AAFF",
+  glowSpread: 3,
 };
 
 export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
@@ -90,3 +96,4 @@ export function getResolutionDimensions(
 
   return map[ratio][res];
 }
+

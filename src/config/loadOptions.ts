@@ -1,16 +1,18 @@
-import { readFileSync, existsSync } from "fs";
+﻿import { readFileSync, existsSync } from "fs";
 import type { Command } from "commander";
 
 /**
  * Resolves effective CLI options with precedence:
  *   explicit CLI flag  >  --preset  >  config file  >  commander default
  *
- * Config file (default ./reddit2shorts.config.json) and presets use the same
- * keys as the camelCase option names (e.g. "minScore", "maxDuration",
- * "subreddits", "source").
+ * Config file (default ./reddit2shorts.config.json) uses an "options" key
+ * for CLI-mappable settings. Nested keys (subredditPools, platformSettings,
+ * etc.) are available via getConfigSection().
  */
 
 type OptionBag = Record<string, unknown>;
+
+let _loadedConfig: OptionBag | null = null;
 
 export const PRESETS: Record<string, OptionBag> = {
   "askreddit-story": {
@@ -38,7 +40,6 @@ export const PRESETS: Record<string, OptionBag> = {
     commentsCount: "5",
     maxDuration: "30",
   },
-  // --- Viral / Influencer presets ---
   "brainrot": {
     subreddits: ["AskReddit", "AmItheAsshole", "tifu", "confession"],
     category: "top",
@@ -107,12 +108,42 @@ export const PRESETS: Record<string, OptionBag> = {
 function loadConfigFile(path: string): OptionBag | null {
   if (!existsSync(path)) return null;
   try {
-    const parsed = JSON.parse(readFileSync(path, "utf8"));
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    console.warn(`⚠️ Ignoring invalid config file: ${path}`);
+    const raw = readFileSync(path, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    _loadedConfig = parsed;
+    // Return the flat "options" key for CLI merging, or an empty object
+    if (parsed.options && typeof parsed.options === "object") {
+      return parsed.options as OptionBag;
+    }
+    // Fallback: pick only string/number/boolean/array top-level keys (not nested objects)
+    const flat: OptionBag = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value === null || value === undefined) continue;
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || Array.isArray(value)) {
+        flat[key] = value;
+      }
+    }
+    return flat;
+  } catch (e) {
+    console.warn(`Warning: Could not parse config file: ${path} - ${e}`);
     return null;
   }
+}
+
+/**
+ * Get a specific section from the loaded config file (e.g., "platformSettings", "subredditPools").
+ */
+export function getConfigSection<T = unknown>(section: string): T | null {
+  if (!_loadedConfig) return null;
+  return (_loadedConfig as Record<string, unknown>)[section] as T ?? null;
+}
+
+/**
+ * Get the full loaded config object.
+ */
+export function getFullConfig(): OptionBag | null {
+  return _loadedConfig;
 }
 
 export function resolveOptions<T>(program: Command): T {

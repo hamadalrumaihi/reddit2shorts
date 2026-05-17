@@ -1,0 +1,35 @@
+﻿{
+  "defaultAccount": "main",
+  "accounts": [
+    {
+      "name": "main",
+      "platform": "both",
+      "subreddits": ["AskReddit", "tifu", "AmItheAsshole", "ProRevenge", "MaliciousCompliance"],
+      "contentStyle": "tiktok-viral",
+      "voiceStyle": "normal",
+      "metadataStyle": "viral",
+      "postsPerDay": 3,
+      "postTimes": ["07:00", "12:00", "19:00"]
+    },
+    {
+      "name": "horror",
+      "platform": "tiktok",
+      "subreddits": ["nosleep", "LetsNotMeet", "creepyencounters", "Glitch_in_the_Matrix"],
+      "contentStyle": "nosleep-horror",
+      "voiceStyle": "normal",
+      "metadataStyle": "storytelling",
+      "postsPerDay": 2,
+      "postTimes": ["21:00", "02:00"]
+    },
+    {
+      "name": "brainrot",
+      "platform": "tiktok",
+      "subreddits": ["AskReddit", "AmItheAsshole", "confession", "unpopularopinion"],
+      "contentStyle": "brainrot",
+      "voiceStyle": "brainrot",
+      "metadataStyle": "brainrot",
+      "postsPerDay": 4,
+      "postTimes": ["06:00", "10:00", "15:00", "20:00"]
+    }
+  ]
+}

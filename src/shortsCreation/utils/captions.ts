@@ -1,4 +1,4 @@
-import ffmpeg from "fluent-ffmpeg";
+﻿import ffmpeg from "fluent-ffmpeg";
 import { writeFile } from "fs/promises";
 import type { CaptionStyle } from "../../config/videoConfig";
 
@@ -91,6 +91,9 @@ export async function generateKaraokeCaptions(
   const highlightColor = hexToAss(style.highlightColor);
   const backColor = hexToAssWithAlpha("#000000", style.bgOpacity);
 
+  // Glow effect: use ASS shadow with blur for glow appearance
+  const glowShadow = (style as any).glowEnabled ? 3 : 0;
+
   const header = `[Script Info]
 Title: Reddit2Shorts Karaoke Captions
 ScriptType: v4.00+
@@ -102,7 +105,7 @@ PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${style.fontFamily},${style.fontSize},${primaryColor},${highlightColor},${outlineColor},${backColor},-1,0,0,0,100,100,0,0,1,${style.strokeWidth},0,${alignment},40,40,${marginV},1
+Style: Default,${style.fontFamily},${style.fontSize},${primaryColor},${highlightColor},${outlineColor},${backColor},-1,0,0,0,100,100,0,0,1,${style.strokeWidth},${glowShadow},${alignment},40,40,${marginV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -182,3 +185,4 @@ export async function burnCaptions(
       .run();
   });
 }
+

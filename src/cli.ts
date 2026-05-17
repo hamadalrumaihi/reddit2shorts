@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CLI entrypoint for reddit2shorts.
  *
  * This script fetches a Reddit text post, generates audio using a TTS
@@ -19,6 +19,7 @@ import {
   Timespan,
 } from "./reddit/types";
 import { JsonReddit } from "./reddit/impl/jsonReddit";
+import { OfflineReddit } from "./reddit/impl/offlineReddit";
 import { SnoowrapReddit } from "./reddit/impl/snoowrapReddit";
 import { createShortFromPost } from "./shortsCreation";
 import { GeminiStory } from "./storySource/geminiStory";
@@ -38,6 +39,10 @@ import { markSeen, postIdFromPermalink } from "./utils/seenPosts";
 import { generateVideoMetadata } from "./metadata";
 import { detectTrendingTopics } from "./metadata/trending";
 import type { VoiceStyle } from "./shortsCreation/utils/replaceAbbrevations";
+import { getAccount, listAccounts } from "./config/accounts";
+import { RunTracker } from "./analytics/tracker";
+import { uploadToAllPlatforms } from "./upload/multiPlatform";
+import { generateTitleVariations, saveABTestRecord } from "./social/abTesting";
 
 const program = new Command();
 
@@ -60,9 +65,10 @@ program
   )
   .option(
     "--source <source>",
-    "Story source: 'json' (Reddit public JSON, no creds — default), 'snoowrap' (Reddit API, needs creds), or 'gemini' (AI-generated)",
+    "Story source: 'json' (Reddit public JSON, no creds â€” default), 'snoowrap' (Reddit API, needs creds), 'gemini' (AI-generated), or 'offline' (cached posts, no network)",
     "json"
   )
+  .option("--offline", "Shorthand for --source offline (use cached posts, skip network)")
   .option("--doctor", "Check environment (yt-dlp, ffmpeg, disk) and exit")
   .option(
     "--dry-run",
@@ -94,12 +100,12 @@ program
   .option("--maxBodyChars <n>", "Max post body length (0=off)", "0")
   .option(
     "-t, --tts <tts>",
-    "Which tts to use: 'edge' (no creds — default), 'google' or 'tiktok'",
+    "Which tts to use: 'edge' (no creds â€” default), 'google' or 'tiktok'",
     "edge"
   )
   .option(
     "-u, --upload <platform>",
-    "Upload after render: 'youtube', 'tiktok' (session cookie), or 'tiktok-api' (official API draft)"
+    "Upload after render: 'youtube', 'tiktok' (session cookie), 'tiktok-api' (official API draft), or 'all' (simultaneous multi-platform)"
   )
   .option("--gTtsVoice <gTtsVoice>", "Voice of google tts", "en-US-Wavenet-F")
   .option("--gTtsLang <gTtsLang>", "Language of google tts", "en-US")
@@ -149,7 +155,12 @@ program
     "--platform <platform>",
     "Target platform for metadata: 'tiktok', 'youtube_shorts', 'reels', 'all'",
     "all"
-  );
+  )
+  .option(
+    "--account <name>",
+    "Use a named account from accounts.json (overrides subreddits, style, credentials)"
+  )
+  .option("--list-accounts", "List available accounts and exit");
 
 interface CliOptions {
   preset?: string;
@@ -181,6 +192,7 @@ interface CliOptions {
   bgVideo: string[] | string;
   cookiesFromBrowser?: string;
   cookies?: string;
+  offline?: boolean;
   doctor?: boolean;
   dryRun?: boolean;
   voiceStyle: VoiceStyle;
@@ -189,6 +201,8 @@ interface CliOptions {
   generateMetadata?: boolean;
   metadataStyle: string;
   platform: string;
+  account?: string;
+  listAccounts?: boolean;
 }
 
 program.parse(process.argv);
@@ -198,6 +212,25 @@ const options = resolveOptions<CliOptions>(program);
 async function main() {
   try {
     setJsonLogging(!!options.json);
+
+    // List accounts mode
+    if (options.listAccounts) {
+      console.log("Available accounts:", listAccounts().join(", "));
+      process.exit(0);
+    }
+
+    // Multi-account support: override options from account config
+    if (options.account) {
+      const acct = getAccount(options.account);
+      options.subreddits = acct.subreddits;
+      if (acct.voiceStyle) options.voiceStyle = acct.voiceStyle as VoiceStyle;
+      if (acct.metadataStyle) options.metadataStyle = acct.metadataStyle;
+      console.log(`Using account: ${acct.name} (${acct.platform})`);
+    }
+
+    // Initialize analytics tracker
+    const tracker = new RunTracker();
+    if (options.account) tracker.setAccount(options.account);
 
     if (options.clean) {
       const removed = await cleanGeneratedVideos(
@@ -215,9 +248,14 @@ async function main() {
       process.exit(doctorPassed(results) ? 0 : 1);
     }
 
-    if (!["snoowrap", "json", "gemini"].includes(options.source)) {
+    // --offline flag is shorthand for --source offline
+    if (options.offline) {
+      options.source = "offline";
+    }
+
+    if (!["snoowrap", "json", "gemini", "offline"].includes(options.source)) {
       console.error(
-        "Error: --source must be one of 'snoowrap', 'json' or 'gemini'"
+        "Error: --source must be one of 'snoowrap', 'json', 'gemini' or 'offline'"
       );
       process.exit(1);
     }
@@ -253,6 +291,31 @@ async function main() {
         options.subreddits
       );
       post = await reddit.getPost(options.postId ?? "");
+    } else if (options.source === "offline") {
+      if (!options.postId && !options.random) {
+        // Default to random in offline mode
+        options.random = true;
+      }
+      reddit = new OfflineReddit();
+      if (options.random) {
+        const filters: PostFilters = {
+          minScore: Number.parseInt(options.minScore, 10) || 0,
+          minComments: Number.parseInt(options.minComments, 10) || 0,
+          maxAgeDays: 0, // Don't filter by age for cached posts
+          allowNsfw: !!options.allowNsfw,
+          minBodyChars: Number.parseInt(options.minBodyChars, 10) || 0,
+          maxBodyChars: Number.parseInt(options.maxBodyChars, 10) || 0,
+        };
+        post = await reddit.getTextOnlyPostFromList(
+          options.subreddits,
+          options.category,
+          options.timeSpan,
+          undefined,
+          filters
+        );
+      } else if (options.postId) {
+        post = await reddit.getPost(options.postId);
+      }
     } else {
       if (!options.postId && !options.random) {
         console.error(
@@ -317,12 +380,20 @@ async function main() {
       subreddit: post.subreddit_name_prefixed,
     });
 
+    // Track post info in analytics
+    tracker.setPostInfo(
+      post.subreddit_name_prefixed,
+      (post as any).id || options.postId || "random",
+      post.title,
+      (post as any).score ?? 0
+    );
+
     if (options.dryRun) {
       const results = await runDoctor();
       console.log(formatDoctor(results));
       console.log(
-        `\n✅ Sample fetch OK (--source ${options.source}):\n` +
-          `   "${post.title}" — ${post.subreddit_name_prefixed}\n` +
+        `\nâœ… Sample fetch OK (--source ${options.source}):\n` +
+          `   "${post.title}" â€” ${post.subreddit_name_prefixed}\n` +
           `\nDry run complete. No video produced.`
       );
       process.exit(doctorPassed(results) ? 0 : 1);
@@ -343,9 +414,9 @@ async function main() {
       const preset = durationMap[options.durationPreset];
       if (preset) {
         maxDuration = preset;
-        console.log(`⏱️ Duration preset: ${options.durationPreset} (max ${maxDuration}s)`);
+        console.log(`â±ï¸ Duration preset: ${options.durationPreset} (max ${maxDuration}s)`);
       } else {
-        console.warn(`⚠️ Unknown duration preset "${options.durationPreset}", using ${maxDuration}s`);
+        console.warn(`âš ï¸ Unknown duration preset "${options.durationPreset}", using ${maxDuration}s`);
       }
     }
 
@@ -378,12 +449,24 @@ async function main() {
       : [options.bgAudio];
 
     const spinnerBg = ora("Getting background assets ready").start();
-    // Pass the full pools so a failed source falls back to the next.
-    await downloadBackgroundAssets(bgVideo, bgAudio, {
-      cookiesFromBrowser: options.cookiesFromBrowser,
-      cookiesFile: options.cookies,
-    });
-    spinnerBg.succeed("Background assets ready");
+    if (options.source === "offline") {
+      // In offline mode, skip downloading â€” just verify cached bg assets exist
+      const fs = await import("fs/promises");
+      const bgVideoExists = await fs.access("shorts/bgVideo.mp4").then(() => true).catch(() => false);
+      const bgAudioExists = await fs.access("shorts/bgAudio.mp3").then(() => true).catch(() => false);
+      if (!bgVideoExists || !bgAudioExists) {
+        spinnerBg.fail("Background assets not cached! Run the tool once online first.");
+        process.exit(1);
+      }
+      spinnerBg.succeed("Background assets ready (from cache)");
+    } else {
+      // Pass the full pools so a failed source falls back to the next.
+      await downloadBackgroundAssets(bgVideo, bgAudio, {
+        cookiesFromBrowser: options.cookiesFromBrowser,
+        cookiesFile: options.cookies,
+      });
+      spinnerBg.succeed("Background assets ready");
+    }
 
     const output = await createShortFromPost({
       post,
@@ -403,16 +486,16 @@ async function main() {
         style: options.metadataStyle as "viral" | "storytelling" | "controversial" | "wholesome" | "brainrot",
         includeCallToAction: true,
       });
-      console.log("\n📱 Generated Social Media Metadata:");
-      console.log(`   🎬 Title: ${metadata.title}`);
-      console.log(`   🪝 Hook: ${metadata.hook}`);
-      console.log(`   #️⃣ Hashtags: ${metadata.hashtags.map(h => `#${h}`).join(" ")}`);
-      console.log(`   📝 Description:\n${metadata.description.split("\n").map(l => `      ${l}`).join("\n")}`);
+      console.log("\nðŸ“± Generated Social Media Metadata:");
+      console.log(`   ðŸŽ¬ Title: ${metadata.title}`);
+      console.log(`   ðŸª Hook: ${metadata.hook}`);
+      console.log(`   #ï¸âƒ£ Hashtags: ${metadata.hashtags.map(h => `#${h}`).join(" ")}`);
+      console.log(`   ðŸ“ Description:\n${metadata.description.split("\n").map(l => `      ${l}`).join("\n")}`);
       logEvent("metadata_generated", metadata);
     }
 
     // Record the post so an automated/repeated run won't re-use it.
-    // (Gemini stories are fictional one-offs — nothing to dedupe.)
+    // (Gemini stories are fictional one-offs â€” nothing to dedupe.)
     if (options.source !== "gemini") {
       const seenId = postIdFromPermalink(post.permalink);
       if (seenId) markSeen(seenId);
@@ -464,6 +547,68 @@ async function main() {
         console.error(err);
       }
     }
+
+    // Multi-platform simultaneous upload
+    if (options.upload === "all") {
+      const uploadSpinner = ora("Uploading to all platforms simultaneously").start();
+      tracker.startStage();
+      try {
+        const results = await uploadToAllPlatforms(output, post, options.tags);
+        const successes = results.filter(r => r.success);
+        const failures = results.filter(r => !r.success);
+
+        if (successes.length > 0) {
+          uploadSpinner.succeed(
+            `Uploaded to ${successes.map(r => r.platform).join(", ")} (${failures.length} failed)`
+          );
+        } else if (results.length > 0) {
+          uploadSpinner.fail("All uploads failed");
+        } else {
+          uploadSpinner.warn("No platforms configured for upload");
+        }
+
+        for (const r of results) {
+          if (r.success) {
+            console.log(`  ✓ ${r.platform}${r.url ? `: ${r.url}` : ""}${r.publishId ? ` (publish_id: ${r.publishId})` : ""}`);
+          } else {
+            console.log(`  ✗ ${r.platform}: ${r.error}`);
+          }
+        }
+
+        tracker.endStage("upload");
+        tracker.setUploadResult(
+          results.map(r => r.platform),
+          successes.length > 0 ? "success" : "failed",
+          failures.map(r => `${r.platform}: ${r.error}`)
+        );
+      } catch (err: any) {
+        uploadSpinner.fail("Error in multi-platform upload");
+        console.error(err);
+        tracker.endStage("upload");
+        tracker.setUploadResult([], "failed", [err.message]);
+      }
+    }
+
+    // A/B title testing: generate variations and save alongside output
+    if (options.generateMetadata) {
+      try {
+        const variations = generateTitleVariations(post, options.platform as any);
+        const videoId = `vid_${Date.now()}`;
+        saveABTestRecord(videoId, (post as any).id || "unknown", post.subreddit_name_prefixed, variations, 0, options.platform);
+        console.log(`\n🎨 A/B Title Variations saved to metadata/ab-tests.json`);
+        for (let i = 0; i < variations.length; i++) {
+          console.log(`   ${i + 1}. [${variations[i].style}] ${variations[i].title}`);
+        }
+        tracker.setMetadata(variations[0]?.title || "", variations[0]?.hashtags || []);
+      } catch { /* non-critical */ }
+    }
+
+    // Finalize analytics
+    try {
+      const stats = tracker.finalize();
+      logEvent("analytics_recorded", { runId: stats.id, totalMs: stats.timing.total });
+    } catch { /* non-critical */ }
+
     logEvent("done", { output });
   } catch (err) {
     console.error("Unexpected error:", err);
@@ -476,3 +621,4 @@ async function main() {
 }
 
 main();
+
