@@ -9,7 +9,8 @@ import { Timeline } from "./timeline";
 /**
  * Renders the timeline to a silent H.264 video by screenshotting headless
  * Chrome frame-by-frame and piping PNGs straight into ffmpeg (no frame files
- * on disk). Several tabs capture in parallel; frames are written in order.
+ * on disk). Several *browsers* capture in parallel (headless Chrome throttles
+ * background tabs, so one tab per browser); frames are written in order.
  */
 
 export interface RenderOptions {
@@ -21,24 +22,34 @@ export interface RenderOptions {
 }
 
 interface Worker {
+  browser: Browser;
   page: Page;
   cdp: CDPSession;
 }
 
 const launchOptions = {
   headless: true,
-  args: ["--no-sandbox", "--disable-setuid-sandbox", "--hide-scrollbars", "--font-render-hinting=none"],
+  protocolTimeout: 120_000,
+  args: [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--hide-scrollbars",
+    "--font-render-hinting=none",
+    "--disable-renderer-backgrounding",
+    "--disable-background-timer-throttling",
+  ],
   ...(process.env.PUPPETEER_EXECUTABLE_PATH ? { executablePath: process.env.PUPPETEER_EXECUTABLE_PATH } : {}),
 };
 
-async function makeWorker(browser: Browser, html: string, timeline: Timeline): Promise<Worker> {
+async function makeWorker(html: string, timeline: Timeline): Promise<Worker> {
+  const browser = await puppeteer.launch(launchOptions);
   const page = await browser.newPage();
   await page.setViewport({ width: timeline.width, height: timeline.height, deviceScaleFactor: 1 });
   await page.setContent(html, { waitUntil: "load" });
   await page.evaluate(() => (document as unknown as { fonts: { ready: Promise<unknown> } }).fonts.ready);
   await page.evaluate((tl) => (window as unknown as { __setup: (t: unknown) => void }).__setup(tl), timeline);
   const cdp = await page.createCDPSession();
-  return { page, cdp };
+  return { browser, page, cdp };
 }
 
 async function captureFrame(w: Worker, frame: number, cover = false): Promise<Buffer> {
@@ -61,7 +72,7 @@ export async function renderAnimation(opts: RenderOptions): Promise<void> {
   const total = Math.ceil(timeline.durationSec * timeline.fps);
   const html = await buildPageHtml();
 
-  const browser = await puppeteer.launch(launchOptions);
+  let workers: Worker[] = [];
   const ffmpeg = spawn(resolveFfmpegPath(), [
     "-y",
     "-hide_banner",
@@ -79,6 +90,12 @@ export async function renderAnimation(opts: RenderOptions): Promise<void> {
     "veryfast",
     "-crf",
     "20",
+    // Bound the peak bitrate so a 59 s short stays under TikTok's 64 MB
+    // single-chunk limit even on noisy frames (crf still governs quality).
+    "-maxrate",
+    process.env.ANIM_MAXRATE || "7M",
+    "-bufsize",
+    "14M",
     "-pix_fmt",
     "yuv420p",
     "-r",
@@ -95,7 +112,7 @@ export async function renderAnimation(opts: RenderOptions): Promise<void> {
   });
 
   try {
-    const workers = await Promise.all(Array.from({ length: workersCount }, () => makeWorker(browser, html, timeline)));
+    workers = await Promise.all(Array.from({ length: workersCount }, () => makeWorker(html, timeline)));
     for (let f = 0; f < total; f += workers.length) {
       const batch = workers.slice(0, Math.min(workers.length, total - f));
       const frames = await Promise.all(batch.map((w, i) => captureFrame(w, f + i)));
@@ -107,21 +124,20 @@ export async function renderAnimation(opts: RenderOptions): Promise<void> {
     ffmpeg.stdin.end();
     await ffmpegDone;
   } finally {
-    await browser.close().catch(() => undefined);
+    await Promise.all(workers.map((w) => w.browser.close().catch(() => undefined)));
   }
 }
 
 /** Render the hook frame with the big title card as cover.jpg. */
 export async function renderCover(timeline: Timeline, outPath: string, atSec?: number): Promise<void> {
   const html = await buildPageHtml();
-  const browser = await puppeteer.launch(launchOptions);
+  const w = await makeWorker(html, timeline);
   try {
-    const w = await makeWorker(browser, html, timeline);
     const hook = timeline.beats[0];
     const t = atSec ?? Math.min(hook.startSec + 0.45, hook.endSec);
     const jpeg = await captureFrame(w, Math.round(t * timeline.fps), true);
     await writeFile(outPath, jpeg);
   } finally {
-    await browser.close().catch(() => undefined);
+    await w.browser.close().catch(() => undefined);
   }
 }

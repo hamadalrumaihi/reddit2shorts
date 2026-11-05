@@ -410,7 +410,7 @@
         const i = (y * w + x) * 4;
         // grain: sparse dark specks + faint fibres
         const g = rnd();
-        let a = g < 0.12 ? 0.16 + rnd() * 0.12 : g > 0.985 ? 0.3 : 0;
+        let a = g < 0.1 ? 0.09 + rnd() * 0.09 : g > 0.99 ? 0.22 : 0;
         // vignette
         const dist = Math.hypot(x - cx, y - cy) / rMax;
         const v = Math.max(0, (dist - 0.62) / 0.38);
@@ -550,8 +550,11 @@
     } else show(E.iris, false);
 
     // ---- film look: grain boil, flicker, occasional hair/scratch
-    const gx = Math.floor(hash(frame * 1.3) * 120) - 60;
-    const gy = Math.floor(hash(frame * 2.9 + 4) * 120) - 60;
+    // Grain "boils" on threes (10 Hz), like hand-inked cels; moving it every
+    // frame reads the same but triples the H.264 bitrate.
+    const g = Math.floor(frame / 3);
+    const gx = Math.floor(hash(g * 1.3) * 120) - 60;
+    const gy = Math.floor(hash(g * 2.9 + 4) * 120) - 60;
     E.film.setAttribute("transform", `translate(${gx} ${gy})`);
     const dip = hash(frame * 17.1) < 0.025 ? 0.1 : 0;
     E.flicker.setAttribute("opacity", fmt(0.015 + 0.045 * smoothNoise(frame * 0.7, 3) + dip));
@@ -587,7 +590,7 @@
     const t = beat.startSec + tlLocal;
     const hideAt = (next && hookBeat.id === beat.id ? next.startSec : hookBeat.endSec + 0.35);
     if (beat.id === hookBeat.id || t < hideAt + 0.35) {
-      const inU = easeOut(t / 0.35);
+      const inU = easeOut((t + 0.12) / 0.35); // visible from the very first frame
       const outU = t > hideAt ? easeIn((t - hideAt) / 0.35) : 0;
       const k = inU * (1 - outU);
       if (k <= 0.001) {
