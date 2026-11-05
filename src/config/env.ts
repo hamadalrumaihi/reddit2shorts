@@ -27,6 +27,27 @@ const envSchema = z.object({
   TIKTOK_REFRESH_TOKEN: z.string().min(1).optional(),
   // TikTok session cookie — `--tts tiktok` voices and `--upload tiktok`.
   TIKTOK_SESSION_ID: z.string().min(1).optional(),
+  // TikTok direct post privacy (unaudited apps: SELF_ONLY) — `--upload tiktok-direct`.
+  TIKTOK_PRIVACY_LEVEL: z.string().min(1).optional(),
+  // Instagram Graph API — only `--upload instagram`.
+  IG_USER_ID: z.string().min(1).optional(),
+  IG_ACCESS_TOKEN: z.string().min(1).optional(),
+  IG_GRAPH_VERSION: z.string().min(1).optional(),
+  IG_TEMP_HOST: z.string().min(1).optional(),
+  IG_TEMP_HOST_EXPIRY: z.string().min(1).optional(),
+  IG_TEMP_HOST_CMD: z.string().min(1).optional(),
+  IG_TEMP_HOST_CLEANUP_CMD: z.string().min(1).optional(),
+  CATBOX_USERHASH: z.string().min(1).optional(),
+  // Edge TTS voice configuration — `--tts edge` (default).
+  EDGE_TTS_VOICE: z.string().min(1).optional(),
+  EDGE_TTS_VOICE_2: z.string().min(1).optional(),
+  EDGE_TTS_RATE: z.string().min(1).optional(),
+  EDGE_TTS_PITCH: z.string().min(1).optional(),
+  EDGE_TTS_PYTHON: z.string().min(1).optional(),
+  // Animated pipeline knobs.
+  ANIM_MUSIC: z.string().min(1).optional(),
+  ANIM_MUSIC_DB: z.string().min(1).optional(),
+  ANIM_RENDER_WORKERS: z.string().min(1).optional(),
 });
 
 const env = envSchema.parse(process.env);
