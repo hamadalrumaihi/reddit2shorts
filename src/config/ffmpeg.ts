@@ -13,4 +13,9 @@ if (resolved) {
   ffmpeg.setFfmpegPath(resolved);
 }
 
+/** Absolute ffmpeg binary used by fluent-ffmpeg, for code that spawns it directly. */
+export function resolveFfmpegPath(): string {
+  return resolved || "ffmpeg";
+}
+
 export default ffmpeg;

@@ -13,7 +13,11 @@ https://github.com/user-attachments/assets/3fb76b45-5695-41e2-93d0-03a2b515aff4
 ## Installation
 
 ### dependencies 
-install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
+install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path (gameplay backgrounds only; not needed for `--animated`)
+
+```bash
+pip install edge-tts   # recommended: keeps the free Edge voices working and gives word timings
+```
 
 ```bash
   git clone https://github.com/yogeshdofficial/reddit2shorts
@@ -26,6 +30,8 @@ install [yt_dlp](https://github.com/yt-dlp/yt-dlp) and add it to path
   bun src/cli.ts --random --upload tiktok-api                       # TikTok official API draft (needs TIKTOK_CLIENT_* creds)
   bun src/cli.ts --source snoowrap --random                        # Reddit API (needs creds)
   bun src/cli.ts --source gemini                                   # AI-generated story (needs GEMINI_API_KEY)
+  bun src/cli.ts --random --preset animated --upload tiktok-api,instagram   # original cartoon animation + TikTok draft + IG Reel
+  bun src/cli.ts --doctor --animated                               # environment check for the animated pipeline
 ```
 
 ### One-click run
@@ -49,6 +55,124 @@ This repo ships `.replit` and `replit.nix`, so you can run it without a local ma
 No credentials needed. The Run button has a **dropdown with two options**:
 - **JSON (default)** — zero credentials.
 - **Gemini fallback** — use this if Reddit blocks Replit's datacenter IP (repeated `403` warnings). One-time setup: add a free `GEMINI_API_KEY` in Replit's **Secrets** tab, then pick this option from the Run dropdown. It never touches Reddit, so the IP block doesn't apply.
+
+## Animated shorts (original cartoon, no gameplay footage)
+
+`--preset animated` (or `--animated` on top of any other preset) replaces the
+gameplay background with an **original 1940s rubber-hose cartoon** rendered
+from scratch for every story:
+
+- **Characters** — an original duo that stays the same in every video:
+  *Beaky*, a lanky nervous crow who narrates, and *Mort*, a stubby grumpy
+  hedgehog who delivers the internet's verdict. Both are SVG rigs in
+  `assets/characters/` (head, body, limbs, tail/quills, 3 mouth shapes, 4 eye
+  states) animated with squash-and-stretch, a paper-grain texture, vignette
+  and a slight film flicker.
+- **Beats** — the story is split into beats; each beat picks a scene
+  (house, office, street, kitchen) from its keywords and an action: chase,
+  gasp, facepalm, door slam, sweat drops, or the anvil gag. Punchlines pop a
+  reaction pose with emanata. Scene changes use an iris wipe.
+- **Lip-sync** — mouth flaps are driven by the TTS amplitude; the narrator and
+  verdict voices are separate (`--voice`, `--voice2`).
+- **Captions** — word-by-word, bold rounded font (Fredoka, OFL), white with a
+  black stroke, the active word highlighted yellow, kept in the middle third
+  with the bottom 20 % and the right 15 % left clear for the TikTok/IG UI.
+- **Audio** — Edge TTS voice, a generated royalty-free swing loop ducked
+  18 dB under the voice (or your own file via `--music`), and procedurally
+  synthesised cartoon SFX (boing, whoosh, slide whistle, clang, door slam…)
+  on action beats. All audio is generated in code, so there is nothing to
+  license.
+- **Output** — `shorts/<post id>/output.mp4` (1080×1920, 30 fps, H.264
+  `-preset veryfast -crf 20`, AAC 192 k, fitted to 45–59 s), `cover.jpg` (the
+  hook frame with the title card), `metadata.json` (caption, hashtags, source
+  post id, beats) and `timeline.json` (debug).
+
+```bash
+# default animated run: AITA story, TikTok draft + Instagram Reel
+bun src/cli.ts --source json --random --preset animated --upload tiktok-api,instagram
+
+# animated TIFU / AskReddit
+bun src/cli.ts --random --preset tifu-narrative --animated
+bun src/cli.ts --random --preset askreddit-story --animated
+
+# render but don't post: prints exactly what each upload would do
+bun src/cli.ts --random --preset animated --upload tiktok-api,instagram --upload-dry-run
+```
+
+The story is rewritten before voicing: the title becomes a ~2 second hook
+("Am I wrong for not letting my friend use the photographer?"), usernames,
+links, e-mails, phone numbers, age tags and first names are stripped (names
+become consistent stand-ins such as *Sam* or *Jo*), AITA jargon is expanded to
+family-friendly speech, and trailing *Edit:* blocks are dropped. Stories that
+run long are cut at a story beat (the cliff-hanger is what "Follow for part 2"
+refers to); short ones get wider pauses or a slightly slower read to reach 45 s.
+
+Content filters used by the preset: `--minScore 1000 --minComments 50
+--minBodyChars 300 --maxBodyChars 1500`, NSFW excluded. If Reddit answers
+403 (common on cloud IPs) the run falls back to `--source gemini` when
+`GEMINI_API_KEY` is set, otherwise to cached posts (`--source offline`).
+
+### Animated flags
+
+| Flag | Default | What it does |
+| --- | --- | --- |
+| `--animated` | off | Cartoon animation instead of a gameplay background (set by `--preset animated`) |
+| `--voice <name>` | `en-US-AriaNeural` | Edge TTS voice for the narrator (crow); env `EDGE_TTS_VOICE` |
+| `--voice2 <name>` | `en-US-GuyNeural` | Edge TTS voice for the verdict/outro (hedgehog); env `EDGE_TTS_VOICE_2` |
+| `--tts-rate <rate>` | `+0%` | Speaking rate, e.g. `+8%`; env `EDGE_TTS_RATE` |
+| `--music <file>` | generated loop | Royalty-free music file; env `ANIM_MUSIC` |
+| `--no-music` / `--no-sfx` | — | Disable music / cartoon sound effects |
+| `--minDuration <s>` | `45` | Lower bound (upper bound is `--maxDuration`, default 59) |
+| `--keep-temp` | off | Keep per-beat audio, the voice track and the silent render in `shorts/<id>/` |
+| `--render-workers <n>` | `3` | Parallel Chrome tabs while rendering (env `ANIM_RENDER_WORKERS`) |
+
+Rendering: headless Chrome draws every frame (SVG rigs + scenes + HTML
+captions) and pipes PNGs straight into ffmpeg; nothing is downloaded. A 55 s
+short renders in roughly one to two minutes on a 4-core machine.
+
+## Uploading to TikTok and Instagram
+
+`--upload` takes a comma-separated list. Add `--upload-dry-run` to render
+everything and only print what each platform upload would do (nothing is
+posted). Captions for animated shorts are: hook + "Follow for part 2" + an
+AI-disclosure line + five niche hashtags (see `metadata.json`).
+
+| Platform | How | AI-generated label |
+| --- | --- | --- |
+| `tiktok-api` | Official Content Posting API, **inbox/draft** (default TikTok route; works for unaudited apps) | The inbox endpoint has no label field — toggle "AI-generated content" in the app when you post the draft |
+| `tiktok-direct` | Official API **direct post**: caption + `is_aigc: true`. Unaudited apps can only post `SELF_ONLY` (`--tiktok-privacy`, env `TIKTOK_PRIVACY_LEVEL`) | Set automatically |
+| `instagram` | Graph API Reels flow: create container → poll until `FINISHED` → publish | The Graph API has no AI-label field; the caption carries "AI-assisted animation" and the label can be toggled in-app |
+| `tiktok` | Session-cookie browser automation (opt-in fallback, fragile) | Manual |
+| `youtube` | YouTube Data API | Manual |
+
+### Instagram setup
+
+1. Convert the Instagram account to **Business** or **Creator** and link it to
+   a Facebook Page.
+2. Create a Meta app, add the Instagram Graph API product and generate a
+   **long-lived user access token** with `instagram_basic`,
+   `instagram_content_publish`, `pages_show_list` and `pages_read_engagement`.
+3. Find the IG user id: `GET /me/accounts` → page id → `GET /<page-id>?fields=instagram_business_account`.
+4. Put `IG_USER_ID` and `IG_ACCESS_TOKEN` in `.env`.
+
+The Graph API fetches the video from a **public URL**, so the file is parked on
+a temporary host first and removed/expired afterwards (`IG_TEMP_HOST` /
+`--ig-temp-host`): `litterbox` (default, expires after `IG_TEMP_HOST_EXPIRY`,
+1 h), `catbox` (deleted after publishing when `CATBOX_USERHASH` is set),
+`custom` (`IG_TEMP_HOST_CMD` uploads and prints the URL, e.g. an S3 bucket;
+`IG_TEMP_HOST_CLEANUP_CMD` removes it) or `url` (`--ig-video-url` with a URL
+you already host). Instagram processes reels asynchronously; the tool polls the
+container status every 5 s for up to 6 minutes before publishing.
+
+### Text-to-speech
+
+The default `--tts edge` now prefers the Python `edge-tts` package
+(`pip install edge-tts`): it tracks Microsoft's handshake changes within days
+(the bundled Node port currently gets HTTP 403), returns **word timings** for
+karaoke captions and lip-sync, and honours `HTTPS_PROXY`. If Python is
+missing the Node port is used as a fallback. `bun src/cli.ts --doctor` reports
+which transport is available; with `--animated` it also checks Chrome, the
+rigs and the caption font, and no longer treats yt-dlp as required.
 
 ## Environment Variables
 

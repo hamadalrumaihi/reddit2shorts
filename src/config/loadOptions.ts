@@ -1,4 +1,4 @@
-﻿import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import type { Command } from "commander";
 
 /**
@@ -15,6 +15,27 @@ type OptionBag = Record<string, unknown>;
 let _loadedConfig: OptionBag | null = null;
 
 export const PRESETS: Record<string, OptionBag> = {
+  /**
+   * Original rubber-hose cartoon animation instead of a gameplay background.
+   * Story defaults mirror `aita-judgment`; override with --subreddits or
+   * combine the animation with another story preset via `--animated`.
+   */
+  animated: {
+    subreddits: ["AmItheAsshole"],
+    category: "top",
+    timeSpan: "week",
+    commentsCount: "3",
+    minScore: "1000",
+    minComments: "50",
+    minBodyChars: "300",
+    maxBodyChars: "1500",
+    maxDuration: "59",
+    minDuration: "45",
+    animated: true,
+    generateMetadata: true,
+    metadataStyle: "viral",
+    platform: "all",
+  },
   "askreddit-story": {
     subreddits: ["AskReddit"],
     category: "top",
@@ -108,7 +129,8 @@ export const PRESETS: Record<string, OptionBag> = {
 function loadConfigFile(path: string): OptionBag | null {
   if (!existsSync(path)) return null;
   try {
-    const raw = readFileSync(path, "utf8");
+    // Strip a UTF-8 BOM (Windows editors add one) so JSON.parse accepts it.
+    const raw = readFileSync(path, "utf8").replace(/^\uFEFF/, "");
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return null;
     _loadedConfig = parsed;

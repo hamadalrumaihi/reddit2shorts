@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  "Beaky" — a lanky, nervous crow. Original character for reddit2shorts.
+  Rubber-hose rig: every animatable part is a <g> with an id and a data-pivot
+  (in rig coordinates) that the runtime rotates/scales around.
+  Facing right. Feet rest on y=560. viewBox 400x600.
+  Eye states: eye-open | eye-wide | eye-closed | eye-squint
+  Mouth shapes: mouth-closed | mouth-mid | mouth-open
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+  <defs>
+    <style>
+      .ink { stroke: #1B1510; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { stroke: #1B1510; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+      .feather { fill: #2B2A33; }
+      .feather-light { fill: #3E3D4A; }
+      .beak { fill: #E8A33D; }
+      .beak-dark { fill: #C97E1D; }
+      .white { fill: #FFFDF5; }
+      .pupil { fill: #1B1510; }
+      .tongue { fill: #E0607E; }
+      .mouth-dark { fill: #4A1F2B; }
+      .foot { stroke: #E8A33D; stroke-width: 11; stroke-linecap: round; fill: none; }
+      .foot-ink { stroke: #1B1510; stroke-width: 17; stroke-linecap: round; fill: none; }
+    </style>
+  </defs>
+  <g id="rig">
+    <!-- tail feathers -->
+    <g id="tail" data-pivot="160,390">
+      <path class="feather ink" d="M160 390 L70 430 L95 400 L60 395 L100 378 L80 360 L150 370 Z"/>
+    </g>
+    <!-- legs: long and thin, with three-toed feet -->
+    <g id="leg-l" data-pivot="188,440">
+      <line class="foot-ink" x1="188" y1="440" x2="176" y2="552"/>
+      <line class="foot" x1="188" y1="440" x2="176" y2="552"/>
+      <path class="foot-ink" d="M176 552 L150 560 M176 552 L182 562 M176 552 L208 558"/>
+      <path class="foot" d="M176 552 L150 560 M176 552 L182 562 M176 552 L208 558"/>
+    </g>
+    <g id="leg-r" data-pivot="214,440">
+      <line class="foot-ink" x1="214" y1="440" x2="228" y2="552"/>
+      <line class="foot" x1="214" y1="440" x2="228" y2="552"/>
+      <path class="foot-ink" d="M228 552 L202 560 M228 552 L234 562 M228 552 L260 558"/>
+      <path class="foot" d="M228 552 L202 560 M228 552 L234 562 M228 552 L260 558"/>
+    </g>
+    <!-- body: tall and skinny -->
+    <g id="body" data-pivot="200,445">
+      <ellipse class="feather ink" cx="200" cy="335" rx="64" ry="118"/>
+      <ellipse class="feather-light" cx="212" cy="360" rx="34" ry="72"/>
+      <!-- scruffy chest feathers -->
+      <path class="thin" fill="none" d="M196 300 l-10 14 M206 320 l-12 14 M198 345 l-10 14"/>
+      <!-- left wing (behind body, further from camera) -->
+      <g id="arm-l" data-pivot="160,270">
+        <path class="ink" fill="none" stroke-width="22" d="M160 270 Q110 320 125 385"/>
+        <path fill="none" stroke="#2B2A33" stroke-width="12" stroke-linecap="round" d="M160 270 Q110 320 125 385"/>
+        <g id="hand-l" data-pivot="125,385">
+          <path class="ink feather" d="M125 385 L96 402 L112 388 L92 384 L114 378 L104 366 Z"/>
+        </g>
+      </g>
+      <!-- right wing (front) -->
+      <g id="arm-r" data-pivot="240,270">
+        <path class="ink" fill="none" stroke-width="22" d="M240 270 Q300 300 290 375"/>
+        <path fill="none" stroke="#2B2A33" stroke-width="12" stroke-linecap="round" d="M240 270 Q300 300 290 375"/>
+        <g id="hand-r" data-pivot="290,375">
+          <path class="ink feather" d="M290 375 L320 392 L304 378 L326 374 L302 366 L314 354 Z"/>
+        </g>
+      </g>
+      <!-- head -->
+      <g id="head" data-pivot="205,225">
+        <!-- neck -->
+        <path class="ink feather" d="M178 240 Q205 210 232 240 L222 262 Q205 250 188 262 Z"/>
+        <!-- skull -->
+        <circle class="feather ink" cx="212" cy="150" r="74"/>
+        <!-- nervous tuft -->
+        <path class="thin" fill="none" d="M200 78 Q190 50 206 42 M214 76 Q218 44 236 46 M226 80 Q244 60 252 66"/>
+        <!-- beak: upper half fixed -->
+        <g id="beak-upper">
+          <path class="beak ink" d="M258 142 L352 158 L262 172 Z"/>
+          <path class="beak-dark" d="M268 150 L330 158 L268 166 Z" opacity="0.5"/>
+          <circle class="pupil" cx="276" cy="152" r="3"/>
+        </g>
+        <!-- mouth shapes: lower beak swings open -->
+        <g id="mouth">
+          <g id="mouth-closed">
+            <path class="beak ink" d="M258 172 L342 170 L262 186 Z"/>
+          </g>
+          <g id="mouth-mid" display="none">
+            <path class="mouth-dark ink" d="M258 172 L342 170 L300 188 Z"/>
+            <path class="beak ink" d="M258 176 L336 194 L262 200 Z"/>
+          </g>
+          <g id="mouth-open" display="none">
+            <path class="mouth-dark ink" d="M258 170 L342 168 L318 210 L262 196 Z"/>
+            <ellipse class="tongue" cx="286" cy="196" rx="16" ry="8"/>
+            <path class="beak ink" d="M258 190 L330 222 L262 226 Z"/>
+          </g>
+        </g>
+        <!-- eyes -->
+        <g id="eyes">
+          <g id="eye-open">
+            <circle class="white ink" cx="196" cy="132" r="24"/>
+            <circle class="white ink" cx="242" cy="124" r="27"/>
+            <circle class="pupil" cx="203" cy="134" r="8"/>
+            <circle class="pupil" cx="250" cy="126" r="9"/>
+            <circle class="white" cx="206" cy="131" r="2.5"/>
+            <circle class="white" cx="253" cy="123" r="2.5"/>
+          </g>
+          <g id="eye-wide" display="none">
+            <circle class="white ink" cx="196" cy="128" r="31"/>
+            <circle class="white ink" cx="244" cy="118" r="34"/>
+            <circle class="pupil" cx="202" cy="130" r="6"/>
+            <circle class="pupil" cx="250" cy="120" r="6"/>
+          </g>
+          <g id="eye-closed" display="none">
+            <path class="ink" fill="none" d="M176 136 Q196 150 216 136 M220 128 Q244 144 266 126"/>
+          </g>
+          <g id="eye-squint" display="none">
+            <circle class="white ink" cx="196" cy="132" r="24"/>
+            <circle class="white ink" cx="242" cy="124" r="27"/>
+            <circle class="pupil" cx="203" cy="138" r="8"/>
+            <circle class="pupil" cx="250" cy="130" r="9"/>
+            <path class="feather ink" d="M170 128 Q196 112 222 128 L222 118 Q196 100 170 118 Z"/>
+            <path class="feather ink" d="M214 116 Q244 100 270 118 L270 108 Q244 90 214 106 Z"/>
+          </g>
+        </g>
+        <!-- worried brows -->
+        <g id="brows">
+          <path class="thin" fill="none" d="M176 100 Q196 92 214 102 M222 92 Q246 84 268 96"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

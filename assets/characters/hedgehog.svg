@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  "Mort" — a stubby, grumpy hedgehog. Original character for reddit2shorts.
+  Same rig conventions as crow.svg (ids + data-pivot). Facing right, feet on
+  y=560, viewBox 400x600. Default eye state is the grumpy squint.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+  <defs>
+    <style>
+      .ink { stroke: #1B1510; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+      .thin { stroke: #1B1510; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+      .fur { fill: #E9C9A0; }
+      .fur-dark { fill: #D4A978; }
+      .quill { fill: #6B4A2B; }
+      .quill-tip { fill: #9A7148; }
+      .white { fill: #FFFDF5; }
+      .pupil { fill: #1B1510; }
+      .nose { fill: #1B1510; }
+      .tongue { fill: #E0607E; }
+      .mouth-dark { fill: #4A1F2B; }
+      .limb { stroke: #D4A978; stroke-width: 22; stroke-linecap: round; fill: none; }
+      .limb-ink { stroke: #1B1510; stroke-width: 36; stroke-linecap: round; fill: none; }
+    </style>
+  </defs>
+  <g id="rig">
+    <!-- short legs -->
+    <g id="leg-l" data-pivot="160,500">
+      <line class="limb-ink" x1="160" y1="500" x2="152" y2="545"/>
+      <line class="limb" x1="160" y1="500" x2="152" y2="545"/>
+      <ellipse class="fur-dark ink" cx="150" cy="548" rx="30" ry="14"/>
+    </g>
+    <g id="leg-r" data-pivot="240,500">
+      <line class="limb-ink" x1="240" y1="500" x2="250" y2="545"/>
+      <line class="limb" x1="240" y1="500" x2="250" y2="545"/>
+      <ellipse class="fur-dark ink" cx="254" cy="548" rx="30" ry="14"/>
+    </g>
+    <!-- body (round) -->
+    <g id="body" data-pivot="200,545">
+      <!-- quills: spiky back -->
+      <path class="quill ink" transform="translate(190 380) scale(1.22 1.18) translate(-190 -380)" d="M205 300 L240 262 L228 310 L268 282 L250 326 L292 316 L262 352 L300 366 L256 380 L286 404 L242 400 L256 444 L220 420 L214 464 L190 426 L160 466 L162 416 L118 442 L136 396 L92 396 L126 364 L84 340 L130 334 L104 290 L150 314 L150 262 L180 304 Z"/>
+      <path class="quill-tip" transform="translate(190 380) scale(1.22 1.18) translate(-190 -380)" d="M240 262 L232 290 L224 284 Z M268 282 L255 304 L246 298 Z M292 316 L270 332 L266 322 Z M104 290 L124 312 L132 306 Z M150 262 L156 290 L164 284 Z"/>
+      <!-- belly / face disc -->
+      <circle class="fur ink" cx="215" cy="395" r="118"/>
+      <ellipse class="fur-dark" cx="230" cy="450" rx="70" ry="42" opacity="0.6"/>
+      <!-- left arm (behind) -->
+      <g id="arm-l" data-pivot="150,400">
+        <path class="limb-ink" d="M150 400 Q118 440 126 476"/>
+        <path class="limb" d="M150 400 Q118 440 126 476"/>
+        <g id="hand-l" data-pivot="126,476">
+          <circle class="fur-dark ink" cx="126" cy="480" r="18"/>
+        </g>
+      </g>
+      <!-- right arm (front) -->
+      <g id="arm-r" data-pivot="268,410">
+        <path class="limb-ink" d="M268 410 Q310 440 302 476"/>
+        <path class="limb" d="M268 410 Q310 440 302 476"/>
+        <g id="hand-r" data-pivot="302,476">
+          <circle class="fur-dark ink" cx="304" cy="480" r="18"/>
+        </g>
+      </g>
+      <!-- head: the face sits on the body; the group lets us nod/tilt it -->
+      <g id="head" data-pivot="240,400">
+        <!-- snout -->
+        <ellipse class="fur ink" cx="290" cy="405" rx="58" ry="36"/>
+        <circle class="nose" cx="342" cy="398" r="15"/>
+        <circle class="white" cx="347" cy="393" r="4"/>
+        <!-- mouth shapes -->
+        <g id="mouth">
+          <g id="mouth-closed">
+            <path class="thin" fill="none" d="M300 432 Q318 420 336 426"/>
+          </g>
+          <g id="mouth-mid" display="none">
+            <ellipse class="mouth-dark ink" cx="312" cy="432" rx="16" ry="10"/>
+          </g>
+          <g id="mouth-open" display="none">
+            <ellipse class="mouth-dark ink" cx="310" cy="436" rx="26" ry="18"/>
+            <ellipse class="tongue" cx="312" cy="446" rx="14" ry="7"/>
+          </g>
+        </g>
+        <!-- eyes -->
+        <g id="eyes">
+          <g id="eye-open">
+            <circle class="white ink" cx="250" cy="352" r="19"/>
+            <circle class="white ink" cx="296" cy="346" r="19"/>
+            <circle class="pupil" cx="256" cy="354" r="7"/>
+            <circle class="pupil" cx="302" cy="348" r="7"/>
+          </g>
+          <g id="eye-wide" display="none">
+            <circle class="white ink" cx="250" cy="348" r="27"/>
+            <circle class="white ink" cx="298" cy="342" r="27"/>
+            <circle class="pupil" cx="255" cy="350" r="6"/>
+            <circle class="pupil" cx="303" cy="344" r="6"/>
+          </g>
+          <g id="eye-closed" display="none">
+            <path class="thin" fill="none" d="M232 356 Q250 366 268 356 M278 350 Q296 360 314 350"/>
+          </g>
+          <g id="eye-squint">
+            <circle class="white ink" cx="250" cy="352" r="19"/>
+            <circle class="white ink" cx="296" cy="346" r="19"/>
+            <circle class="pupil" cx="257" cy="356" r="7"/>
+            <circle class="pupil" cx="303" cy="350" r="7"/>
+            <!-- heavy grumpy lids -->
+            <path class="fur ink" d="M228 346 L272 334 L274 346 Q250 352 228 352 Z"/>
+            <path class="fur ink" d="M274 340 L318 328 L320 340 Q296 346 274 346 Z"/>
+          </g>
+        </g>
+        <!-- grumpy brows -->
+        <g id="brows">
+          <path class="ink" fill="none" stroke-width="10" d="M230 326 L272 318 M278 316 L320 306"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

@@ -87,6 +87,9 @@ export function mapComment(data: RawCommentData): RedditComment {
 }
 
 export class JsonReddit implements RedditInterface {
+  /** HTTP status of the most recent failed request (e.g. 403 when Reddit blocks the IP). */
+  lastHttpStatus: number | null = null;
+
   private async fetchJson<T>(url: string): Promise<T> {
     try {
       const response = await axios.get<T>(url, {
@@ -94,6 +97,7 @@ export class JsonReddit implements RedditInterface {
       });
       return response.data;
     } catch (error) {
+      if (error instanceof AxiosError) this.lastHttpStatus = error.response?.status ?? null;
       if (
         error instanceof AxiosError &&
         error.response?.status === 429

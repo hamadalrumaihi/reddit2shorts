@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CLI entrypoint for reddit2shorts.
  *
  * This script fetches a Reddit text post, generates audio using a TTS
@@ -42,6 +42,11 @@ import type { VoiceStyle } from "./shortsCreation/utils/replaceAbbrevations";
 import { getAccount, listAccounts } from "./config/accounts";
 import { RunTracker } from "./analytics/tracker";
 import { uploadToAllPlatforms } from "./upload/multiPlatform";
+import { createAnimatedShort } from "./shortsCreation/animated";
+import { parseUploadPlatforms, runUploads } from "./upload/animatedUpload";
+import { OfflineReddit as OfflineRedditFallback } from "./reddit/impl/offlineReddit";
+import type { TiktokPrivacy } from "./upload/tiktok";
+import type { TempHost } from "./upload/instagram";
 import { generateTitleVariations, saveABTestRecord } from "./social/abTesting";
 
 const program = new Command();
@@ -104,9 +109,23 @@ program
     "edge"
   )
   .option(
-    "-u, --upload <platform>",
-    "Upload after render: 'youtube', 'tiktok' (session cookie), 'tiktok-api' (official API draft), or 'all' (simultaneous multi-platform)"
+    "-u, --upload <platforms>",
+    "Upload after render (comma-separated): 'tiktok-api' (official API draft), 'tiktok-direct' (official API post with AI label), 'instagram' (Reels), 'youtube', 'tiktok' (session cookie, opt-in fallback), or 'all'"
   )
+  .option("--upload-dry-run", "Render everything, then only print what each upload would do (no posting)")
+  .option("--animated", "Original cartoon animation instead of a gameplay background (see --preset animated)")
+  .option("--voice <name>", "Edge TTS voice for the narrator (crow), e.g. en-US-AriaNeural (env EDGE_TTS_VOICE)")
+  .option("--voice2 <name>", "Edge TTS voice for the verdict/outro (hedgehog), e.g. en-US-GuyNeural (env EDGE_TTS_VOICE_2)")
+  .option("--tts-rate <rate>", "Edge TTS rate, e.g. +8% or -5% (env EDGE_TTS_RATE)")
+  .option("--music <file>", "Royalty-free music file for --animated (default: generated swing loop; env ANIM_MUSIC)")
+  .option("--no-music", "Disable background music in --animated")
+  .option("--no-sfx", "Disable cartoon sound effects in --animated")
+  .option("--minDuration <seconds>", "Lower bound for --animated shorts (pads pauses / slows the voice)", "45")
+  .option("--keep-temp", "Keep per-beat audio and intermediate files in shorts/<id>/")
+  .option("--render-workers <n>", "Parallel Chrome tabs used to render animation frames", "3")
+  .option("--tiktok-privacy <level>", "tiktok-direct privacy: SELF_ONLY (default, unaudited apps), PUBLIC_TO_EVERYONE, FOLLOWER_OF_CREATOR, MUTUAL_FOLLOW_FRIENDS")
+  .option("--ig-temp-host <host>", "Public host for the Instagram upload: litterbox (default), catbox, custom, url (env IG_TEMP_HOST)")
+  .option("--ig-video-url <url>", "With --ig-temp-host url: an already-public URL of the rendered video")
   .option("--gTtsVoice <gTtsVoice>", "Voice of google tts", "en-US-Wavenet-F")
   .option("--gTtsLang <gTtsLang>", "Language of google tts", "en-US")
   .option("--gTtsGender <gTtsGender>", "Gender of google tts", "FEMALE")
@@ -203,6 +222,19 @@ interface CliOptions {
   platform: string;
   account?: string;
   listAccounts?: boolean;
+  uploadDryRun?: boolean;
+  animated?: boolean;
+  voice?: string;
+  voice2?: string;
+  ttsRate?: string;
+  music?: string | boolean;
+  sfx?: boolean;
+  minDuration: string;
+  keepTemp?: boolean;
+  renderWorkers: string;
+  tiktokPrivacy?: string;
+  igTempHost?: string;
+  igVideoUrl?: string;
 }
 
 program.parse(process.argv);
@@ -242,7 +274,7 @@ async function main() {
     }
 
     if (options.doctor) {
-      const results = await runDoctor();
+      const results = await runDoctor({ animated: !!options.animated });
       console.log(formatDoctor(results));
       logEvent("doctor", { passed: doctorPassed(results) });
       process.exit(doctorPassed(results) ? 0 : 1);
@@ -368,6 +400,41 @@ async function main() {
       }
     }
 
+    // Reddit blocks many cloud/VPN IPs with 403. Fall back to a generated
+    // story (--source gemini) when a key exists, else to cached posts.
+    if (!post && options.source === "json" && reddit instanceof JsonReddit && reddit.lastHttpStatus) {
+      const status = reddit.lastHttpStatus;
+      if (env.GEMINI_API_KEY) {
+        console.warn(`âš ï¸ Reddit returned HTTP ${status}; falling back to --source gemini`);
+        options.source = "gemini";
+        reddit = new GeminiStory(env.GEMINI_API_KEY, options.subreddits);
+        post = await reddit.getPost("");
+      } else {
+        const offline = new OfflineRedditFallback();
+        const cached = await offline.getTextOnlyPostFromList(
+          options.subreddits,
+          options.category,
+          options.timeSpan,
+          undefined,
+          {
+            minScore: Number.parseInt(options.minScore, 10) || 0,
+            minComments: Number.parseInt(options.minComments, 10) || 0,
+            allowNsfw: !!options.allowNsfw,
+            minBodyChars: Number.parseInt(options.minBodyChars, 10) || 0,
+            maxBodyChars: Number.parseInt(options.maxBodyChars, 10) || 0,
+          }
+        );
+        if (cached) {
+          console.warn(`âš ï¸ Reddit returned HTTP ${status}; set GEMINI_API_KEY for --source gemini fallback. Using a cached post (--source offline).`);
+          options.source = "offline";
+          reddit = offline;
+          post = cached;
+        } else {
+          console.error(`Error: Reddit returned HTTP ${status} and no fallback is available (set GEMINI_API_KEY or cache posts with cache-posts.bat).`);
+        }
+      }
+    }
+
     if (!post) {
       console.error("Error: Could not fetch the Reddit post.");
       logEvent("error", { stage: "fetch", message: "no post" });
@@ -389,7 +456,7 @@ async function main() {
     );
 
     if (options.dryRun) {
-      const results = await runDoctor();
+      const results = await runDoctor({ animated: !!options.animated });
       console.log(formatDoctor(results));
       console.log(
         `\nâœ… Sample fetch OK (--source ${options.source}):\n` +
@@ -448,6 +515,73 @@ async function main() {
       ? options.bgAudio
       : [options.bgAudio];
 
+    const uploadPlatforms = parseUploadPlatforms(
+      options.upload && options.upload !== "all" ? options.upload : options.animated && options.upload === "all" ? "all" : undefined
+    );
+
+    if (options.animated) {
+      const result = await createAnimatedShort({
+        post,
+        reddit,
+        commentsCount,
+        maxDuration,
+        minDuration: Number.parseInt(options.minDuration, 10) || 45,
+        voice: options.voice,
+        voice2: options.voice2,
+        rate: options.ttsRate,
+        music: options.music === false ? false : typeof options.music === "string" ? options.music : undefined,
+        sfx: options.sfx !== false,
+        keepTemp: !!options.keepTemp,
+        renderWorkers: Number.parseInt(options.renderWorkers, 10) || 3,
+      });
+      logEvent("render_complete", { output: result.outputPath, cover: result.coverPath, metadata: result.metadataPath });
+      console.log(`\nðŸ“ Caption:\n${result.caption.caption.split("\n").map((l) => `   ${l}`).join("\n")}`);
+
+      if (options.source !== "gemini") {
+        const seenId = postIdFromPermalink(post.permalink);
+        if (seenId) markSeen(seenId);
+      }
+
+      if (uploadPlatforms.length > 0) {
+        const dryRun = !!options.uploadDryRun;
+        const uploadSpinner = ora(`${dryRun ? "Dry-run upload" : "Uploading"} to ${uploadPlatforms.join(", ")}`).start();
+        tracker.startStage();
+        const outcomes = await runUploads(uploadPlatforms, {
+          videoPath: result.outputPath,
+          coverPath: result.coverPath,
+          caption: result.caption.caption,
+          title: result.caption.hook,
+          hashtags: result.caption.hashtags,
+          dryRun,
+          tiktokPrivacy: options.tiktokPrivacy as TiktokPrivacy | undefined,
+          igTempHost: options.igTempHost as TempHost | undefined,
+          igVideoUrl: options.igVideoUrl,
+          log: (m) => uploadSpinner.info(m),
+        });
+        const ok = outcomes.filter((o) => o.success);
+        if (ok.length === outcomes.length) uploadSpinner.succeed(`${dryRun ? "Dry-run" : "Upload"} finished for ${ok.map((o) => o.platform).join(", ")}`);
+        else uploadSpinner.warn(`${ok.length}/${outcomes.length} uploads succeeded`);
+        for (const o of outcomes) {
+          console.log(`  ${o.success ? "âœ“" : "âœ—"} ${o.platform}: ${o.error || o.detail || ""}${o.url ? ` ${o.url}` : ""}`);
+        }
+        tracker.endStage("upload");
+        tracker.setUploadResult(
+          outcomes.map((o) => o.platform),
+          ok.length > 0 ? "success" : "failed",
+          outcomes.filter((o) => !o.success).map((o) => `${o.platform}: ${o.error}`)
+        );
+      } else if (options.uploadDryRun) {
+        console.log("\n(--upload-dry-run set but no --upload platforms given)");
+      }
+
+      try {
+        const stats = tracker.finalize();
+        logEvent("analytics_recorded", { runId: stats.id, totalMs: stats.timing.total });
+      } catch { /* non-critical */ }
+      logEvent("done", { output: result.outputPath });
+      return;
+    }
+
     const spinnerBg = ora("Getting background assets ready").start();
     if (options.source === "offline") {
       // In offline mode, skip downloading â€” just verify cached bg assets exist
@@ -491,7 +625,7 @@ async function main() {
       console.log(`   ðŸª Hook: ${metadata.hook}`);
       console.log(`   #ï¸âƒ£ Hashtags: ${metadata.hashtags.map(h => `#${h}`).join(" ")}`);
       console.log(`   ðŸ“ Description:\n${metadata.description.split("\n").map(l => `      ${l}`).join("\n")}`);
-      logEvent("metadata_generated", metadata);
+      logEvent("metadata_generated", { ...metadata });
     }
 
     // Record the post so an automated/repeated run won't re-use it.
@@ -499,6 +633,29 @@ async function main() {
     if (options.source !== "gemini") {
       const seenId = postIdFromPermalink(post.permalink);
       if (seenId) markSeen(seenId);
+    }
+
+    if (
+      options.upload &&
+      options.upload !== "all" &&
+      (options.upload.includes(",") || options.upload === "instagram" || options.upload === "tiktok-direct")
+    ) {
+      const meta = generateVideoMetadata(post, { platform: "all", style: "viral", includeCallToAction: true });
+      const caption = `${meta.title}\n\n${meta.description}`;
+      const outcomes = await runUploads(uploadPlatforms, {
+        videoPath: output,
+        caption,
+        title: meta.title,
+        hashtags: meta.hashtags,
+        dryRun: !!options.uploadDryRun,
+        tiktokPrivacy: options.tiktokPrivacy as TiktokPrivacy | undefined,
+        igTempHost: options.igTempHost as TempHost | undefined,
+        igVideoUrl: options.igVideoUrl,
+        log: (m) => console.log(`  ${m}`),
+      });
+      for (const o of outcomes) {
+        console.log(`  ${o.success ? "âœ“" : "âœ—"} ${o.platform}: ${o.error || o.detail || ""}${o.url ? ` ${o.url}` : ""}`);
+      }
     }
 
     if (options.upload === "youtube") {
